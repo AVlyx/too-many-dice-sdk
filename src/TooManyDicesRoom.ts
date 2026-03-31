@@ -12,7 +12,7 @@ export interface SubmitFormGroup {
   formId: string;
   targetPlayer: TmdPlayer;
   fields: TmdForm[];
-  submitButton?: { label: string };
+  submitButton: { label: string };
 }
 
 /** @deprecated Use SubmitFormGroup instead */

@@ -293,7 +293,7 @@ await room.setFormErrors("character-setup", room.players[0], [
 | `formId`       | `string`            | Unique identifier for this form                                     |
 | `targetPlayer` | `TmdPlayer`         | The player who sees this form                                       |
 | `fields`       | `TmdForm[]`         | Array of form field instances                                       |
-| `submitButton` | `{ label: string }` | Optional submit button; if omitted you must clear the form manually |
+| `submitButton` | `{ label: string }` | The submit button shown to the player |
 
 ---
 

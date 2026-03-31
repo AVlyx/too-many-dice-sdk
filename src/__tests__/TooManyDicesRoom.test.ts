@@ -293,6 +293,7 @@ describe("sendSubmitForms()", () => {
         formId: "form_1",
         targetPlayer: new TmdPlayer("user_1", "Alice"),
         fields: [new CheckboxForm("agree", "I agree")],
+        submitButton: { label: "Submit" },
       },
     ]);
 
@@ -304,7 +305,7 @@ describe("sendSubmitForms()", () => {
         formId: "form_1",
         targetPlayerId: "user_1",
         fields: [{ type: "Checkbox", id: "agree", label: "I agree" }],
-        submitButton: undefined,
+        submitButton: { label: "Submit" },
       },
     ]);
   });

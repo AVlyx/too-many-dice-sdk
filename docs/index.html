@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Too Many Dice SDK — Documentation</title>
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/docs.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+    />
+  </head>
+  <body>
+    <!-- Red Banner -->
+    <div class="unavailable-banner">
+      Too Many Dice is not yet available on the App Store or Google Play Store
+    </div>
+
+    <!-- Nav -->
+    <nav class="nav">
+      <a href="index.html" class="nav-logo">
+        <span>&#127922;</span> Too Many Dice <span>SDK</span>
+      </a>
+      <button class="nav-hamburger" id="hamburger">&#9776;</button>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html" class="active">Docs</a>
+        <a href="playground.html">Playground</a>
+        <a href="https://github.com/AVlyx/too-many-dice-sdk" target="_blank"
+          >GitHub</a
+        >
+      </div>
+    </nav>
+
+    <div class="docs-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Getting Started</div>
+          <a class="sidebar-link" href="#installation">Installation</a>
+          <a class="sidebar-link" href="#quick-start">Quick Start</a>
+          <a class="sidebar-link" href="#concepts">Concepts</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">TooManyDicesRoom</div>
+          <a class="sidebar-link" href="#create">create()</a>
+          <a class="sidebar-link" href="#properties">Properties</a>
+          <a class="sidebar-link" href="#set-dices">setDices()</a>
+          <a class="sidebar-link" href="#roll">roll()</a>
+          <a class="sidebar-link" href="#wait-for-roll">waitForRoll()</a>
+          <a class="sidebar-link" href="#close-access">closeAccess()</a>
+          <a class="sidebar-link" href="#open-access">openAccess()</a>
+          <a class="sidebar-link" href="#swipe-gestures"
+            >enableSwipeGestures()</a
+          >
+          <a class="sidebar-link" href="#destroy">destroy()</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Events</div>
+          <a class="sidebar-link" href="#callbacks">Callbacks</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Players</div>
+          <a class="sidebar-link" href="#tmd-player">TmdPlayer</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Forms</div>
+          <a class="sidebar-link" href="#forms-overview">Overview</a>
+          <a class="sidebar-link" href="#submit-forms">Submit Forms</a>
+          <a class="sidebar-link" href="#callback-forms">Callback Forms</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Form Fields</div>
+          <a class="sidebar-link" href="#checkbox-form">CheckboxForm</a>
+          <a class="sidebar-link" href="#text-form">TextForm</a>
+          <a class="sidebar-link" href="#picker-form">PickerForm</a>
+          <a class="sidebar-link" href="#multi-select-form">MultiSelectForm</a>
+          <a class="sidebar-link" href="#slider-form">SliderForm</a>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Reference</div>
+          <a class="sidebar-link" href="#types">Types</a>
+          <a class="sidebar-link" href="#complete-example">Complete Example</a>
+          <a class="sidebar-link" href="#hosts">Hosts</a>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="docs-content">
+        <h1>Too Many Dice SDK</h1>
+        <p class="subtitle">
+          TypeScript SDK for integrating TooManyDices into your online game.
+          Control a shared dice-rolling room from your game server.
+        </p>
+
+        <!-- Installation -->
+        <h2 id="installation">Installation</h2>
+        <div class="code-block">
+          <pre><code class="language-bash">npm install too-many-dice</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <!-- Quick Start -->
+        <h2 id="quick-start">Quick Start</h2>
+        <div class="code-block">
+          <pre><code class="language-javascript">import { TooManyDicesRoom } from "too-many-dice";
+
+// 1. Create a room
+const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+  playerLimit: 4,
+  diceConfig: [{ type: "d6" }, { type: "d6" }],
+  callbacks: {
+    onPlayerJoined: (player) =&gt; console.log(`${player.name} joined`),
+    onPlayerLeft: (player) =&gt; console.log(`${player.name} left`),
+    onResult: (results) =&gt; console.log("Roll results:", results),
+  },
+});
+
+console.log("Room code:", room.roomCode); // Share with players
+
+// 2. Players open the TooManyDices app and enter the room code.
+
+// 3. Trigger a roll once players are connected
+const results = await room.roll();
+
+// 4. Clean up
+await room.destroy();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <!-- Concepts -->
+        <h2 id="concepts">Concepts</h2>
+        <h3>Room Lifecycle</h3>
+        <div class="code-block">
+          <pre><code class="language-text">create() → share roomCode → players join via app → orchestrate gameplay → destroy()</code></pre>
+        </div>
+        <p>
+          Once created, the room is open for players to join using the
+          <code>roomCode</code>. Use <code>closeAccess()</code> to stop new
+          players from joining while the game is in progress, and
+          <code>openAccess()</code> to re-open it.
+        </p>
+
+        <hr />
+
+        <!-- TooManyDicesRoom -->
+        <h2 id="create">TooManyDicesRoom.create(host, options?)</h2>
+        <p>
+          Creates a new room. Returns a <code>TooManyDicesRoom</code> with full
+          owner privileges.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+  playerLimit: 4,
+  diceConfig: [{ id: "atk", type: "d20" }],
+  callbacks: { onPlayerJoined, onPlayerLeft, onResult, onFormSubmit },
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <h4>Options (<code>CreateRoomOptions</code>)</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>playerLimit</code></td>
+              <td><code>number</code></td>
+              <td>Max number of players allowed to join</td>
+            </tr>
+            <tr>
+              <td><code>diceConfig</code></td>
+              <td><code>DiceConfig[]</code></td>
+              <td>Initial dice configuration</td>
+            </tr>
+            <tr>
+              <td><code>swipeGesturesEnabled</code></td>
+              <td><code>boolean</code></td>
+              <td>
+                Allow players to swipe-throw individual dice (default:
+                <code>true</code>)
+              </td>
+            </tr>
+            <tr>
+              <td><code>callbacks</code></td>
+              <td><code>TooManyDicesCallbacks</code></td>
+              <td>Event handlers</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="returns-label">
+          Returns: <code>Promise&lt;TooManyDicesRoom&gt;</code>
+        </p>
+
+        <!-- Properties -->
+        <h2 id="properties">Properties</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>roomCode</code></td>
+              <td><code>string</code></td>
+              <td>The code players enter in the app to join</td>
+            </tr>
+            <tr>
+              <td><code>playerLimit</code></td>
+              <td><code>number | null</code></td>
+              <td>Max players (null if not set)</td>
+            </tr>
+            <tr>
+              <td><code>players</code></td>
+              <td><code>readonly TmdPlayer[]</code></td>
+              <td>Currently connected players</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <!-- setDices -->
+        <h2 id="set-dices">room.setDices(diceConfig)</h2>
+        <p>Reconfigure the dice at any time during a session.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.setDices([
+  { id: "strength", type: "d20" },
+  { id: "bonus", type: "d4" },
+]);</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <h4>DiceConfig</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>type</code></td>
+              <td><code>"d4" | "d6" | "d8" | "d10" | "d12" | "d20"</code></td>
+              <td>Die type</td>
+            </tr>
+            <tr>
+              <td><code>id</code></td>
+              <td><code>string</code></td>
+              <td>Optional identifier (returned in roll results)</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <!-- roll -->
+        <h2 id="roll">room.roll(player?)</h2>
+        <p>
+          Triggers a roll. Delegates 3D physics simulation to
+          <code>player</code> (or the first connected player if omitted).
+          Resolves with the results once the dice settle.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">// First available player handles the physics
+const results = await room.roll();
+
+// Specific player handles the physics
+const results = await room.roll(room.players[0]);</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p class="returns-label">
+          Returns: <code>Promise&lt;DiceResult[]&gt;</code>
+        </p>
+
+        <h4>DiceResult</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>diceId</code></td>
+              <td><code>string</code></td>
+              <td>The die's ID</td>
+            </tr>
+            <tr>
+              <td><code>value</code></td>
+              <td><code>number</code></td>
+              <td>The rolled value</td>
+            </tr>
+            <tr>
+              <td><code>dieType</code></td>
+              <td><code>DieType</code></td>
+              <td>The die type</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Throws if no players are connected, or times out after 30 seconds.
+        </p>
+
+        <hr />
+
+        <!-- waitForRoll -->
+        <h2 id="wait-for-roll">room.waitForRoll(player)</h2>
+        <p>
+          Waits for a specific player to manually roll (shake or tap in the
+          app). The player initiates the roll themselves.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">const results = await room.waitForRoll(room.players[0]);</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p class="returns-label">
+          Returns: <code>Promise&lt;DiceResult[]&gt;</code>
+        </p>
+
+        <hr />
+
+        <!-- closeAccess -->
+        <h2 id="close-access">room.closeAccess()</h2>
+        <p>
+          Prevents new players from joining. Existing players stay connected.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.closeAccess();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <!-- openAccess -->
+        <h2 id="open-access">room.openAccess()</h2>
+        <p>
+          Re-opens the room to new players after a <code>closeAccess()</code>.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.openAccess();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <!-- enableSwipeGestures -->
+        <h2 id="swipe-gestures">room.enableSwipeGestures(enabled)</h2>
+        <p>
+          Controls whether players can swipe-throw individual dice. When
+          disabled, players can only roll via the Roll button (or SDK-triggered
+          rolls).
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.enableSwipeGestures(false); // disable
+await room.enableSwipeGestures(true);  // re-enable</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <!-- destroy -->
+        <h2 id="destroy">room.destroy()</h2>
+        <p>
+          Disconnects the WebSocket and cleans up all listeners. Call this when
+          your game session ends. Safe to call multiple times.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.destroy();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <hr />
+
+        <!-- Callbacks -->
+        <h2 id="callbacks">Callbacks</h2>
+        <p>Pass callbacks in <code>CreateRoomOptions</code>:</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">const room = await TooManyDicesRoom.create(host, {
+  callbacks: {
+    onPlayerJoined(player) {
+      console.log(`${player.name} (${player.playerId}) joined`);
+    },
+    onPlayerLeft(player) {
+      console.log(`${player.name} left`);
+    },
+    onResult(results) {
+      for (const r of results) {
+        console.log(`Die ${r.diceId} (${r.dieType}): ${r.value}`);
+      }
+    },
+    onFormSubmit({ formId, playerId, answers }) {
+      console.log(`Player ${playerId} submitted form ${formId}:`, answers);
+    },
+  },
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Callback</th>
+              <th>Signature</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>onPlayerJoined</code></td>
+              <td><code>(player: TmdPlayer) =&gt; void</code></td>
+              <td>Fired when a player connects</td>
+            </tr>
+            <tr>
+              <td><code>onPlayerLeft</code></td>
+              <td><code>(player: TmdPlayer) =&gt; void</code></td>
+              <td>Fired when a player disconnects</td>
+            </tr>
+            <tr>
+              <td><code>onResult</code></td>
+              <td><code>(results: DiceResult[]) =&gt; void</code></td>
+              <td>Fired when dice settle after a roll</td>
+            </tr>
+            <tr>
+              <td><code>onFormSubmit</code></td>
+              <td>
+                <code>(data: { formId, playerId, answers }) =&gt; void</code>
+              </td>
+              <td>Fired when a player submits a form</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <!-- TmdPlayer -->
+        <h2 id="tmd-player">TmdPlayer</h2>
+        <p>Represents a connected player.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>playerId</code></td>
+              <td><code>string</code></td>
+              <td>Unique identifier for this player</td>
+            </tr>
+            <tr>
+              <td><code>name</code></td>
+              <td><code>string</code></td>
+              <td>Display name chosen by the player</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <!-- Forms Overview -->
+        <h2 id="forms-overview">Forms</h2>
+        <p>
+          Forms are UI overlays pushed to a player's screen in the TooManyDices
+          app. There are two form modes:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Mode</th>
+              <th>API</th>
+              <th>Use case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Submit forms</strong></td>
+              <td><code>sendSubmitForms()</code></td>
+              <td>Collect structured input; player taps a submit button</td>
+            </tr>
+            <tr>
+              <td><strong>Callback forms</strong></td>
+              <td><code>sendCallbackForm()</code></td>
+              <td>React to live field changes and custom buttons</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>A player can only have one form active at a time.</p>
+
+        <!-- Submit Forms -->
+        <h3 id="submit-forms">Submit Forms</h3>
+        <p>
+          Send one or more forms and receive results via the
+          <code>onFormSubmit</code> callback.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">import { TextForm, PickerForm, CheckboxForm } from "too-many-dice";
+
+await room.sendSubmitForms([
+  {
+    formId: "character-setup",
+    targetPlayer: room.players[0],
+    fields: [
+      new TextForm("name", "Character name", {
+        placeholder: "Enter name",
+        required: true,
+      }),
+      new PickerForm("class", "Class", ["Warrior", "Mage", "Rogue"]),
+      new CheckboxForm("veteran", "Veteran player?"),
+    ],
+    submitButton: { label: "Confirm" },
+  },
+]);
+
+// Results arrive via callbacks.onFormSubmit
+// answers: { name: "Elara", class: "Mage", veteran: true }</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <p>To dismiss all forms:</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.clearSubmitForms();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <p>To show validation errors to a player:</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">await room.setFormErrors("character-setup", room.players[0], [
+  "Name must be at least 3 characters",
+]);</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <h4>SubmitFormGroup</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>formId</code></td>
+              <td><code>string</code></td>
+              <td>Unique identifier for this form</td>
+            </tr>
+            <tr>
+              <td><code>targetPlayer</code></td>
+              <td><code>TmdPlayer</code></td>
+              <td>The player who sees this form</td>
+            </tr>
+            <tr>
+              <td><code>fields</code></td>
+              <td><code>TmdForm[]</code></td>
+              <td>Array of form field instances</td>
+            </tr>
+            <tr>
+              <td><code>submitButton</code></td>
+              <td><code>{ label: string }</code></td>
+              <td>The submit button shown to the player</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Callback Forms -->
+        <h3 id="callback-forms">Callback Forms</h3>
+        <p>React to individual field changes and button clicks in real time.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">import { SliderForm, MultiSelectForm } from "too-many-dice";
+
+let currentStrength = 10;
+let selectedPerks = [];
+
+const handle = await room.sendCallbackForm({
+  targetPlayer: room.players[0],
+  fields: [
+    {
+      field: new SliderForm("str", "Strength", 1, 20, 1),
+      onChange: (value) =&gt; { currentStrength = value; },
+    },
+    {
+      field: new MultiSelectForm("perks", "Perks", [
+        "Shield", "Haste", "Berserk",
+      ]),
+      onChange: (value) =&gt; { selectedPerks = value; },
+    },
+  ],
+  buttons: [
+    {
+      label: "Confirm Build",
+      onClick: (playerId) =&gt; {
+        console.log(`${playerId} confirmed: str=${currentStrength}`);
+        handle.clear();
+      },
+    },
+  ],
+});
+
+// Dismiss manually at any time:
+await handle.clear();</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <h4>CallbackFormOptions</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>targetPlayer</code></td>
+              <td><code>TmdPlayer</code></td>
+              <td>The player who sees this form</td>
+            </tr>
+            <tr>
+              <td><code>fields</code></td>
+              <td><code>CallbackField[]</code></td>
+              <td>Fields with <code>onChange</code> handlers</td>
+            </tr>
+            <tr>
+              <td><code>buttons</code></td>
+              <td><code>CallbackButton[]</code></td>
+              <td>Optional action buttons</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4>CallbackFormHandle</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>formId</code></td>
+              <td><code>string</code></td>
+              <td>Auto-generated ID for this form</td>
+            </tr>
+            <tr>
+              <td><code>clear()</code></td>
+              <td><code>() =&gt; Promise&lt;void&gt;</code></td>
+              <td>Dismiss the form and remove all listeners</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <!-- Form Field Types -->
+        <h2 id="checkbox-form">CheckboxForm</h2>
+        <p>A single boolean toggle.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new CheckboxForm("agree", "I agree to the rules");
+new CheckboxForm("agree", "I agree to the rules", { required: true });</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>boolean</code></p>
+
+        <h2 id="text-form">TextForm</h2>
+        <p>A free-text input field.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new TextForm("username", "Your name");
+new TextForm("username", "Your name", {
+  placeholder: "e.g. Gandalf",
+  required: true,
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>string</code></p>
+
+        <h2 id="picker-form">PickerForm</h2>
+        <p>A single-selection dropdown or wheel picker.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new PickerForm("difficulty", "Difficulty", ["Easy", "Normal", "Hard"]);
+new PickerForm("difficulty", "Difficulty", ["Easy", "Normal", "Hard"], {
+  required: true,
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>string</code> (one of the provided options)</p>
+
+        <h2 id="multi-select-form">MultiSelectForm</h2>
+        <p>Multiple selectable options.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new MultiSelectForm("skills", "Choose skills", [
+  "Fireball", "Shield", "Haste",
+]);
+new MultiSelectForm("skills", "Choose skills", [
+  "Fireball", "Shield", "Haste",
+], { required: true });</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>string[]</code></p>
+
+        <h2 id="slider-form">SliderForm</h2>
+        <p>A numeric range slider.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">// (id, label, min, max, step, options?)
+new SliderForm("hp", "Hit Points", 1, 100, 5);
+new SliderForm("hp", "Hit Points", 1, 100, 5, { required: true });</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>number</code></p>
+
+        <hr />
+
+        <!-- Types -->
+        <h2 id="types">Types Reference</h2>
+        <div class="code-block">
+          <pre><code class="language-javascript">import type {
+  DiceConfig,
+  DiceResult,
+  DieType,
+  TooManyDicesCallbacks,
+  CreateRoomOptions,
+  SubmitFormGroup,
+  CallbackField,
+  CallbackButton,
+  CallbackFormOptions,
+  CallbackFormHandle,
+  TmdForm,
+} from "too-many-dice";</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+
+        <h4>DieType</h4>
+        <div class="code-block">
+          <pre><code class="language-javascript">type DieType = "d4" | "d6" | "d8" | "d10" | "d12" | "d20";</code></pre>
+        </div>
+
+        <h4>DiceConfig</h4>
+        <div class="code-block">
+          <pre><code class="language-javascript">interface DiceConfig {
+  id?: string;
+  type: DieType;
+}</code></pre>
+        </div>
+
+        <h4>DiceResult</h4>
+        <div class="code-block">
+          <pre><code class="language-javascript">interface DiceResult {
+  diceId: string;
+  value: number;
+  dieType: DieType;
+}</code></pre>
+        </div>
+
+        <hr />
+
+        <!-- Complete Example -->
+        <h2 id="complete-example">Complete Example</h2>
+        <p>
+          A turn-based game that creates a room, collects character info via
+          forms, then runs dice rolls for each player.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">import {
+  TooManyDicesRoom, TextForm, PickerForm, SliderForm,
+} from "too-many-dice";
+
+const HOST = "myapp.partykit.dev";
+
+async function runGame() {
+  const characters = new Map();
+
+  const room = await TooManyDicesRoom.create(HOST, {
+    playerLimit: 2,
+    callbacks: {
+      onPlayerJoined: (p) =&gt;
+        console.log(`${p.name} joined (${room.players.length}/2)`),
+      onFormSubmit: ({ playerId, answers }) =&gt; {
+        characters.set(playerId, answers);
+      },
+    },
+  });
+
+  console.log("Share this code with players:", room.roomCode);
+
+  // Wait for 2 players
+  await new Promise((resolve) =&gt; {
+    const interval = setInterval(() =&gt; {
+      if (room.players.length === 2) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 500);
+  });
+
+  await room.closeAccess();
+
+  // Send each player a character setup form
+  await room.sendSubmitForms(
+    room.players.map((p) =&gt; ({
+      formId: `char-${p.playerId}`,
+      targetPlayer: p,
+      fields: [
+        new TextForm("name", "Character name", { required: true }),
+        new PickerForm("class", "Class", ["Warrior", "Mage", "Rogue"]),
+        new SliderForm("level", "Starting level", 1, 10, 1),
+      ],
+      submitButton: { label: "Ready!" },
+    })),
+  );
+
+  // Wait for submissions
+  await new Promise((resolve) =&gt; {
+    const interval = setInterval(() =&gt; {
+      if (characters.size === 2) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 200);
+  });
+  await room.clearSubmitForms();
+
+  // Play turns
+  await room.setDices([{ id: "atk", type: "d20" }]);
+  for (const player of room.players) {
+    console.log(`${player.name}'s turn — rolling d20...`);
+    const results = await room.roll(player);
+    console.log("Result:", results);
+  }
+
+  await room.destroy();
+}
+
+runGame().catch(console.error);</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="js/docs.js"></script>
+  </body>
+</html>
