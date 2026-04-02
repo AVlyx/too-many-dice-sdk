@@ -16,7 +16,7 @@ export {
   SliderForm,
   DpadForm,
 } from "./forms";
-export type { TmdForm } from "./forms";
+export type { TmdForm, DpadFormOptions } from "./forms";
 export type {
   CreateRoomOptions,
   DiceConfig,
@@ -24,4 +24,7 @@ export type {
   DieType,
   TooManyDicesCallbacks,
   UnsubscribeFn,
+  DpadVisibility,
+  DpadDirectionConfig,
+  DpadFieldDef,
 } from "./types";

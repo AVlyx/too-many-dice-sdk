@@ -4,6 +4,7 @@ export { PickerForm } from "./PickerForm";
 export { MultiSelectForm } from "./MultiSelectForm";
 export { SliderForm } from "./SliderForm";
 export { DpadForm } from "./DpadForm";
+export type { DpadFormOptions } from "./DpadForm";
 
 import type { CheckboxForm } from "./CheckboxForm";
 import type { TextForm } from "./TextForm";

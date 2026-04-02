@@ -568,5 +568,6 @@ import type {
   DpadVisibility,
   DpadDirectionConfig,
   DpadFieldDef,
+  DpadFormOptions,
 } from "too-many-dice";
 ```
