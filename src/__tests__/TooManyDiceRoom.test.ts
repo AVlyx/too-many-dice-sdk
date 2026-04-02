@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TooManyDicesRoom } from "../TooManyDicesRoom";
+import { TooManyDiceRoom } from "../TooManyDiceRoom";
 import { TmdPlayer } from "../TmdPlayer";
 import { CheckboxForm } from "../forms/CheckboxForm";
-import type { TooManyDicesCallbacks } from "../types";
+import type { TooManyDiceCallbacks } from "../types";
 
 // ─── Mock PartySocket ────────────────────────────────────────────────────────
 
@@ -71,8 +71,8 @@ beforeEach(() => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function makeOwnerRoom(
-  callbacks: TooManyDicesCallbacks = {},
-): Promise<TooManyDicesRoom> {
+  callbacks: TooManyDiceCallbacks = {},
+): Promise<TooManyDiceRoom> {
   // When send is called with createApiRoom, trigger the apiCreated response
   mockSocket.send.mockImplementation((raw: string) => {
     const msg = JSON.parse(raw);
@@ -88,7 +88,7 @@ async function makeOwnerRoom(
       );
     }
   });
-  return TooManyDicesRoom.create("too-many-dice.avlyx.partykit.dev", { callbacks });
+  return TooManyDiceRoom.create("too-many-dice.avlyx.partykit.dev", { callbacks });
 }
 
 function triggerRoomUpdate(data: any) {
@@ -104,7 +104,7 @@ function rawRoom(
 
 // ─── create() ────────────────────────────────────────────────────────────────
 
-describe("TooManyDicesRoom.create()", () => {
+describe("TooManyDiceRoom.create()", () => {
   it("calls createApiRoom and sets roomCode + ownerToken", async () => {
     const room = await makeOwnerRoom();
     expect(room.roomCode).toBe("ABC123");
@@ -127,7 +127,7 @@ describe("TooManyDicesRoom.create()", () => {
         );
       }
     });
-    await TooManyDicesRoom.create("too-many-dice.avlyx.partykit.dev", {
+    await TooManyDiceRoom.create("too-many-dice.avlyx.partykit.dev", {
       playerLimit: 4,
       diceConfig: [{ id: "d1", type: "d6" }],
     });
@@ -225,10 +225,10 @@ describe("onResult callback", () => {
 // ─── owner-only mutations ─────────────────────────────────────────────────────
 
 describe("owner-only mutations", () => {
-  it("setDices sends sdk:updateDiceConfig", async () => {
+  it("setDice sends sdk:updateDiceConfig", async () => {
     const room = await makeOwnerRoom();
     mockSocket.send.mockClear();
-    await room.setDices([{ type: "d6" }]);
+    await room.setDice([{ type: "d6" }]);
     const sent = JSON.parse(mockSocket.send.mock.calls[0][0]);
     expect(sent.type).toBe("sdk:updateDiceConfig");
     expect(sent.diceConfig).toEqual([{ type: "d6" }]);

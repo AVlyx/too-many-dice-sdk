@@ -1,4 +1,4 @@
-export { TooManyDicesRoom } from "./TooManyDicesRoom";
+export { TooManyDiceRoom } from "./TooManyDiceRoom";
 export type {
   SubmitFormGroup,
   FormGroup,
@@ -6,7 +6,7 @@ export type {
   CallbackButton,
   CallbackFormOptions,
   CallbackFormHandle,
-} from "./TooManyDicesRoom";
+} from "./TooManyDiceRoom";
 export { TmdPlayer } from "./TmdPlayer";
 export {
   CheckboxForm,
@@ -22,7 +22,7 @@ export type {
   DiceConfig,
   DiceResult,
   DieType,
-  TooManyDicesCallbacks,
+  TooManyDiceCallbacks,
   UnsubscribeFn,
   DpadVisibility,
   DpadDirectionConfig,

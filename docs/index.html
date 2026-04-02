@@ -42,10 +42,10 @@
           <a class="sidebar-link" href="#concepts">Concepts</a>
         </div>
         <div class="sidebar-section">
-          <div class="sidebar-section-title">TooManyDicesRoom</div>
+          <div class="sidebar-section-title">TooManyDiceRoom</div>
           <a class="sidebar-link" href="#create">create()</a>
           <a class="sidebar-link" href="#properties">Properties</a>
-          <a class="sidebar-link" href="#set-dices">setDices()</a>
+          <a class="sidebar-link" href="#set-dice">setDice()</a>
           <a class="sidebar-link" href="#roll">roll()</a>
           <a class="sidebar-link" href="#wait-for-roll">waitForRoll()</a>
           <a class="sidebar-link" href="#close-access">closeAccess()</a>
@@ -89,7 +89,7 @@
       <main class="docs-content">
         <h1>Too Many Dice SDK</h1>
         <p class="subtitle">
-          TypeScript SDK for integrating TooManyDices into your online game.
+          TypeScript SDK for integrating TooManyDice into your online game.
           Control a shared dice-rolling room from your game server.
         </p>
 
@@ -103,10 +103,10 @@
         <!-- Quick Start -->
         <h2 id="quick-start">Quick Start</h2>
         <div class="code-block">
-          <pre><code class="language-javascript">import { TooManyDicesRoom } from "too-many-dice";
+          <pre><code class="language-javascript">import { TooManyDiceRoom } from "too-many-dice";
 
 // 1. Create a room
-const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
   playerLimit: 4,
   diceConfig: [{ type: "d6" }, { type: "d6" }],
   callbacks: {
@@ -118,7 +118,7 @@ const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
 
 console.log("Room code:", room.roomCode); // Share with players
 
-// 2. Players open the TooManyDices app and enter the room code.
+// 2. Players open the TooManyDice app and enter the room code.
 
 // 3. Trigger a roll once players are connected
 const results = await room.roll();
@@ -143,14 +143,14 @@ await room.destroy();</code></pre>
 
         <hr />
 
-        <!-- TooManyDicesRoom -->
-        <h2 id="create">TooManyDicesRoom.create(host, options?)</h2>
+        <!-- TooManyDiceRoom -->
+        <h2 id="create">TooManyDiceRoom.create(host, options?)</h2>
         <p>
-          Creates a new room. Returns a <code>TooManyDicesRoom</code> with full
+          Creates a new room. Returns a <code>TooManyDiceRoom</code> with full
           owner privileges.
         </p>
         <div class="code-block">
-          <pre><code class="language-javascript">const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+          <pre><code class="language-javascript">const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
   playerLimit: 4,
   diceConfig: [{ id: "atk", type: "d20" }],
   callbacks: { onPlayerJoined, onPlayerLeft, onResult, onFormSubmit },
@@ -188,13 +188,13 @@ await room.destroy();</code></pre>
             </tr>
             <tr>
               <td><code>callbacks</code></td>
-              <td><code>TooManyDicesCallbacks</code></td>
+              <td><code>TooManyDiceCallbacks</code></td>
               <td>Event handlers</td>
             </tr>
           </tbody>
         </table>
         <p class="returns-label">
-          Returns: <code>Promise&lt;TooManyDicesRoom&gt;</code>
+          Returns: <code>Promise&lt;TooManyDiceRoom&gt;</code>
         </p>
 
         <!-- Properties -->
@@ -228,11 +228,11 @@ await room.destroy();</code></pre>
 
         <hr />
 
-        <!-- setDices -->
-        <h2 id="set-dices">room.setDices(diceConfig)</h2>
+        <!-- setDice -->
+        <h2 id="set-dice">room.setDice(diceConfig)</h2>
         <p>Reconfigure the dice at any time during a session.</p>
         <div class="code-block">
-          <pre><code class="language-javascript">await room.setDices([
+          <pre><code class="language-javascript">await room.setDice([
   { id: "strength", type: "d20" },
   { id: "bonus", type: "d4" },
 ]);</code></pre>
@@ -386,7 +386,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
         <h2 id="callbacks">Callbacks</h2>
         <p>Pass callbacks in <code>CreateRoomOptions</code>:</p>
         <div class="code-block">
-          <pre><code class="language-javascript">const room = await TooManyDicesRoom.create(host, {
+          <pre><code class="language-javascript">const room = await TooManyDiceRoom.create(host, {
   callbacks: {
     onPlayerJoined(player) {
       console.log(`${player.name} (${player.playerId}) joined`);
@@ -472,7 +472,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
         <!-- Forms Overview -->
         <h2 id="forms-overview">Forms</h2>
         <p>
-          Forms are UI overlays pushed to a player's screen in the TooManyDices
+          Forms are UI overlays pushed to a player's screen in the TooManyDice
           app. There are two form modes:
         </p>
         <table>
@@ -763,7 +763,7 @@ new DpadForm("move", "Move", {
   DiceConfig,
   DiceResult,
   DieType,
-  TooManyDicesCallbacks,
+  TooManyDiceCallbacks,
   CreateRoomOptions,
   SubmitFormGroup,
   CallbackField,
@@ -811,7 +811,7 @@ new DpadForm("move", "Move", {
         </p>
         <div class="code-block">
           <pre><code class="language-javascript">import {
-  TooManyDicesRoom, TextForm, PickerForm, SliderForm,
+  TooManyDiceRoom, TextForm, PickerForm, SliderForm,
 } from "too-many-dice";
 
 const HOST = "myapp.partykit.dev";
@@ -819,7 +819,7 @@ const HOST = "myapp.partykit.dev";
 async function runGame() {
   const characters = new Map();
 
-  const room = await TooManyDicesRoom.create(HOST, {
+  const room = await TooManyDiceRoom.create(HOST, {
     playerLimit: 2,
     callbacks: {
       onPlayerJoined: (p) =&gt;
@@ -870,7 +870,7 @@ async function runGame() {
   await room.clearSubmitForms();
 
   // Play turns
-  await room.setDices([{ id: "atk", type: "d20" }]);
+  await room.setDice([{ id: "atk", type: "d20" }]);
   for (const player of room.players) {
     console.log(`${player.name}'s turn — rolling d20...`);
     const results = await room.roll(player);

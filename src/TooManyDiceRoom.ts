@@ -4,7 +4,7 @@ import type {
   CreateRoomOptions,
   DiceConfig,
   DiceResult,
-  TooManyDicesCallbacks,
+  TooManyDiceCallbacks,
 } from "./types";
 import type { TmdForm } from "./forms";
 
@@ -86,13 +86,13 @@ function sendAndWait<T>(
 
 // ─── Room Class ─────────────────────────────────────────────────────────────
 
-export class TooManyDicesRoom {
+export class TooManyDiceRoom {
   readonly roomCode: string;
   readonly ownerToken: string | null;
   readonly playerLimit: number | null;
 
   private socket: PartySocket;
-  private callbacks: TooManyDicesCallbacks;
+  private callbacks: TooManyDiceCallbacks;
   private destroyed = false;
 
   // ── Observable state ────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export class TooManyDicesRoom {
     roomCode: string,
     ownerToken: string | null,
     playerLimit: number | null,
-    callbacks: TooManyDicesCallbacks,
+    callbacks: TooManyDiceCallbacks,
   ) {
     this.socket = socket;
     this.roomCode = roomCode;
@@ -129,7 +129,7 @@ export class TooManyDicesRoom {
   static async create(
     partykitHost: string = "too-many-dice.avlyx.partykit.dev",
     options?: CreateRoomOptions,
-  ): Promise<TooManyDicesRoom> {
+  ): Promise<TooManyDiceRoom> {
     const protocol = partykitHost.includes("localhost") ? "http" : "https";
     const res = await fetch(`${protocol}://${partykitHost}/parties/main/new`, {
       method: "POST",
@@ -175,7 +175,7 @@ export class TooManyDicesRoom {
       "apiCreated",
     );
 
-    const room = new TooManyDicesRoom(
+    const room = new TooManyDiceRoom(
       socket,
       result.roomCode,
       result.ownerToken,
@@ -267,7 +267,7 @@ export class TooManyDicesRoom {
 
   // ─── Dice ────────────────────────────────────────────────────────────────────
 
-  async setDices(diceConfig: DiceConfig[]): Promise<void> {
+  async setDice(diceConfig: DiceConfig[]): Promise<void> {
     this.requireOwner();
     this.socket.send(
       JSON.stringify({
@@ -637,7 +637,7 @@ export class TooManyDicesRoom {
   private requireOwner(): void {
     if (!this.ownerToken) {
       throw new Error(
-        "This operation requires room ownership (use TooManyDicesRoom.create)",
+        "This operation requires room ownership (use TooManyDiceRoom.create)",
       );
     }
   }

@@ -11,7 +11,7 @@ export interface DiceResult {
   dieType: DieType;
 }
 
-export type TooManyDicesCallbacks = {
+export type TooManyDiceCallbacks = {
   onPlayerJoined?: (player: import("./TmdPlayer").TmdPlayer) => void;
   onPlayerLeft?: (player: import("./TmdPlayer").TmdPlayer) => void;
   onResult?: (results: DiceResult[]) => void;
@@ -26,7 +26,7 @@ export interface CreateRoomOptions {
   diceConfig?: DiceConfig[];
   playerLimit?: number;
   swipeGesturesEnabled?: boolean;
-  callbacks?: TooManyDicesCallbacks;
+  callbacks?: TooManyDiceCallbacks;
 }
 
 // ─── Form field definitions ───────────────────────────────────────────────────

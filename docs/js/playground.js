@@ -1,5 +1,5 @@
 import {
-  TooManyDicesRoom,
+  TooManyDiceRoom,
   TmdPlayer,
   CheckboxForm,
   TextForm,
@@ -176,7 +176,7 @@ document.getElementById("btn-create-room").addEventListener("click", async () =>
     if (playerLimit) opts.playerLimit = playerLimit;
     if (diceConfig.length > 0) opts.diceConfig = diceConfig;
 
-    room = await TooManyDicesRoom.create(host || undefined, opts);
+    room = await TooManyDiceRoom.create(host || undefined, opts);
 
     log(`Room created! Code: ${room.roomCode}`, "success");
     document.getElementById("room-code-value").textContent = room.roomCode;
@@ -212,7 +212,7 @@ document.getElementById("btn-update-dice").addEventListener("click", async () =>
     return;
   }
   try {
-    await room.setDices(config);
+    await room.setDice(config);
     log(`Dice updated: ${config.map((d) => d.type).join(", ")}`, "success");
   } catch (err) {
     log(`Error updating dice: ${err.message}`, "error");

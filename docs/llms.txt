@@ -1,6 +1,6 @@
 # too-many-dice SDK
 
-TypeScript SDK for integrating TooManyDices into your online game. Control a shared dice-rolling room from your game server: manage players, configure dice, trigger rolls, and push interactive UI forms to players' phones.
+TypeScript SDK for integrating TooManyDice into your online game. Control a shared dice-rolling room from your game server: manage players, configure dice, trigger rolls, and push interactive UI forms to players' phones.
 
 ## Installation
 
@@ -11,9 +11,9 @@ npm install too-many-dice
 ## Quick Start
 
 ```ts
-import { TooManyDicesRoom } from "too-many-dice";
+import { TooManyDiceRoom } from "too-many-dice";
 
-const room = await TooManyDicesRoom.create({
+const room = await TooManyDiceRoom.create({
   playerLimit: 4,
   diceConfig: [{ type: "d6" }, { type: "d6" }],
   callbacks: {
@@ -32,14 +32,14 @@ await room.destroy();
 
 ---
 
-## TooManyDicesRoom
+## TooManyDiceRoom
 
-### `TooManyDicesRoom.create(options?): Promise<TooManyDicesRoom>`
+### `TooManyDiceRoom.create(options?): Promise<TooManyDiceRoom>`
 
 Creates a new room with full owner privileges.
 
 ```ts
-const room = await TooManyDicesRoom.create({
+const room = await TooManyDiceRoom.create({
   playerLimit: 4,
   diceConfig: [{ id: "atk", type: "d20" }],
   swipeGesturesEnabled: false,
@@ -59,12 +59,12 @@ const room = await TooManyDicesRoom.create({
 
 ### Dice
 
-#### `room.setDices(diceConfig: DiceConfig[]): Promise<void>`
+#### `room.setDice(diceConfig: DiceConfig[]): Promise<void>`
 
 Reconfigure dice at any time.
 
 ```ts
-await room.setDices([{ id: "strength", type: "d20" }, { id: "bonus", type: "d4" }]);
+await room.setDice([{ id: "strength", type: "d20" }, { id: "bonus", type: "d4" }]);
 ```
 
 ---
@@ -185,10 +185,10 @@ interface CreateRoomOptions {
   diceConfig?: DiceConfig[];
   playerLimit?: number;
   swipeGesturesEnabled?: boolean; // default: true
-  callbacks?: TooManyDicesCallbacks;
+  callbacks?: TooManyDiceCallbacks;
 }
 
-type TooManyDicesCallbacks = {
+type TooManyDiceCallbacks = {
   onPlayerJoined?: (player: TmdPlayer) => void;
   onPlayerLeft?: (player: TmdPlayer) => void;
   onResult?: (results: DiceResult[]) => void;
@@ -248,12 +248,12 @@ Common options: `{ required?: boolean }`
 ## Complete Example: Turn-Based Game
 
 ```ts
-import { TooManyDicesRoom, TextForm, PickerForm, SliderForm } from "too-many-dice";
+import { TooManyDiceRoom, TextForm, PickerForm, SliderForm } from "too-many-dice";
 
 async function runGame() {
   const characters = new Map<string, Record<string, unknown>>();
 
-  const room = await TooManyDicesRoom.create({
+  const room = await TooManyDiceRoom.create({
     playerLimit: 2,
     callbacks: {
       onPlayerJoined: (p) => console.log(`${p.name} joined (${room.players.length}/2)`),
@@ -295,7 +295,7 @@ async function runGame() {
   await room.clearSubmitForms();
 
   // Play turns
-  await room.setDices([{ id: "atk", type: "d20" }]);
+  await room.setDice([{ id: "atk", type: "d20" }]);
   for (const player of room.players) {
     const results = await room.roll(player);
     console.log(`${player.name} rolled:`, results);

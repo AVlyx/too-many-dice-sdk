@@ -1,6 +1,6 @@
 # too-many-dice SDK
 
-TypeScript SDK for integrating TooManyDices into your online game. Control a shared dice-rolling room from your game server: manage players, configure dice, trigger rolls, and push interactive UI forms to players.
+TypeScript SDK for integrating TooManyDice into your online game. Control a shared dice-rolling room from your game server: manage players, configure dice, trigger rolls, and push interactive UI forms to players.
 
 ## Installation
 
@@ -11,10 +11,10 @@ npm install too-many-dice
 ## Quick Start
 
 ```ts
-import { TooManyDicesRoom } from "too-many-dice";
+import { TooManyDiceRoom } from "too-many-dice";
 
 // 1. Create a room on your game server
-const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
   playerLimit: 4,
   diceConfig: [{ type: "d6" }, { type: "d6" }],
   callbacks: {
@@ -26,7 +26,7 @@ const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
 
 console.log("Room code:", room.roomCode); // Share this with players
 
-// 2. Players open the TooManyDices app and enter the room code.
+// 2. Players open the TooManyDice app and enter the room code.
 
 // 3. Trigger a roll once players are connected
 const results = await room.roll();
@@ -52,14 +52,14 @@ Once created, the room is open for players to join using the `roomCode`. Use `cl
 
 ## API Reference
 
-### `TooManyDicesRoom`
+### `TooManyDiceRoom`
 
-#### `TooManyDicesRoom.create(host, options?)`
+#### `TooManyDiceRoom.create(host, options?)`
 
-Creates a new room. Returns a `TooManyDicesRoom` with full owner privileges.
+Creates a new room. Returns a `TooManyDiceRoom` with full owner privileges.
 
 ```ts
-const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
+const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
   playerLimit: 4,
   diceConfig: [{ id: "atk", type: "d20" }],
   callbacks: { onPlayerJoined, onPlayerLeft, onResult, onFormSubmit },
@@ -73,9 +73,9 @@ const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
 | `playerLimit`          | `number`                | Max number of players allowed to join                          |
 | `diceConfig`           | `DiceConfig[]`          | Initial dice configuration                                     |
 | `swipeGesturesEnabled` | `boolean`               | Allow players to swipe-throw individual dice (default: `true`) |
-| `callbacks`            | `TooManyDicesCallbacks` | Event handlers (see [Callbacks](#callbacks))                   |
+| `callbacks`            | `TooManyDiceCallbacks` | Event handlers (see [Callbacks](#callbacks))                   |
 
-**Returns:** `Promise<TooManyDicesRoom>`
+**Returns:** `Promise<TooManyDiceRoom>`
 
 #### Properties
 
@@ -89,12 +89,12 @@ const room = await TooManyDicesRoom.create("myapp.partykit.dev", {
 
 #### Dice
 
-##### `room.setDices(diceConfig)`
+##### `room.setDice(diceConfig)`
 
 Reconfigure the dice at any time during a session.
 
 ```ts
-await room.setDices([
+await room.setDice([
   { id: "strength", type: "d20" },
   { id: "bonus", type: "d4" },
 ]);
@@ -194,7 +194,7 @@ await room.destroy();
 Pass callbacks in `CreateRoomOptions`:
 
 ```ts
-const room = await TooManyDicesRoom.create(host, {
+const room = await TooManyDiceRoom.create(host, {
   callbacks: {
     onPlayerJoined(player) {
       console.log(`${player.name} (${player.playerId}) joined`);
@@ -237,7 +237,7 @@ Represents a connected player.
 
 ## Forms
 
-Forms are UI overlays pushed to a player's screen in the TooManyDices app. There are two form modes:
+Forms are UI overlays pushed to a player's screen in the TooManyDice app. There are two form modes:
 
 | Mode               | API                  | Use case                                              |
 | ------------------ | -------------------- | ----------------------------------------------------- |
@@ -472,7 +472,7 @@ Submit value: `string` (the selected direction)
 
 ```ts
 import {
-  TooManyDicesRoom,
+  TooManyDiceRoom,
   TextForm,
   PickerForm,
   SliderForm,
@@ -483,7 +483,7 @@ const HOST = "myapp.partykit.dev";
 async function runGame() {
   const characters = new Map<string, Record<string, unknown>>();
 
-  const room = await TooManyDicesRoom.create(HOST, {
+  const room = await TooManyDiceRoom.create(HOST, {
     playerLimit: 2,
     callbacks: {
       onPlayerJoined: (p) =>
@@ -534,7 +534,7 @@ async function runGame() {
   await room.clearSubmitForms();
 
   // Play turns
-  await room.setDices([{ id: "atk", type: "d20" }]);
+  await room.setDice([{ id: "atk", type: "d20" }]);
 
   for (const player of room.players) {
     console.log(`\n${player.name}'s turn — rolling d20...`);
@@ -557,7 +557,7 @@ import type {
   DiceConfig,
   DiceResult,
   DieType,
-  TooManyDicesCallbacks,
+  TooManyDiceCallbacks,
   CreateRoomOptions,
   SubmitFormGroup,
   CallbackField,
