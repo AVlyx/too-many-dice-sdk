@@ -1,0 +1,308 @@
+# too-many-dice SDK
+
+TypeScript SDK for integrating TooManyDices into your online game. Control a shared dice-rolling room from your game server: manage players, configure dice, trigger rolls, and push interactive UI forms to players' phones.
+
+## Installation
+
+```bash
+npm install too-many-dice
+```
+
+## Quick Start
+
+```ts
+import { TooManyDicesRoom } from "too-many-dice";
+
+const room = await TooManyDicesRoom.create({
+  playerLimit: 4,
+  diceConfig: [{ type: "d6" }, { type: "d6" }],
+  callbacks: {
+    onPlayerJoined: (player) => console.log(`${player.name} joined`),
+    onResult: (results) => console.log("Roll results:", results),
+  },
+});
+
+console.log("Room code:", room.roomCode); // Share with players
+
+const results = await room.roll();
+// [{ diceId: "0", value: 4, dieType: "d6" }, { diceId: "1", value: 2, dieType: "d6" }]
+
+await room.destroy();
+```
+
+---
+
+## TooManyDicesRoom
+
+### `TooManyDicesRoom.create(options?): Promise<TooManyDicesRoom>`
+
+Creates a new room with full owner privileges.
+
+```ts
+const room = await TooManyDicesRoom.create({
+  playerLimit: 4,
+  diceConfig: [{ id: "atk", type: "d20" }],
+  swipeGesturesEnabled: false,
+  callbacks: { onPlayerJoined, onPlayerLeft, onResult, onFormSubmit },
+});
+```
+
+### Properties
+
+| Property      | Type                   | Description                               |
+| ------------- | ---------------------- | ----------------------------------------- |
+| `roomCode`    | `string`               | Code players enter in the app to join     |
+| `playerLimit` | `number \| null`       | Max players (null if not set)             |
+| `players`     | `readonly TmdPlayer[]` | Currently connected players               |
+
+---
+
+### Dice
+
+#### `room.setDices(diceConfig: DiceConfig[]): Promise<void>`
+
+Reconfigure dice at any time.
+
+```ts
+await room.setDices([{ id: "strength", type: "d20" }, { id: "bonus", type: "d4" }]);
+```
+
+---
+
+### Rolling
+
+#### `room.roll(player?: TmdPlayer): Promise<DiceResult[]>`
+
+Triggers a roll. Delegates physics to `player` (or first connected player if omitted). Resolves when dice settle. Times out after 30s. Throws if no players are connected.
+
+```ts
+const results = await room.roll();
+const results = await room.roll(room.players[0]);
+```
+
+#### `room.waitForRoll(player: TmdPlayer, timeoutMs?: number): Promise<DiceResult[]>`
+
+Waits for a specific player to manually roll (shake/tap in the app). Default timeout: 120,000ms.
+
+```ts
+const results = await room.waitForRoll(room.players[0]);
+const results = await room.waitForRoll(room.players[0], 60000);
+```
+
+---
+
+### Room Control
+
+#### `room.closeAccess(): Promise<void>`
+Prevents new players from joining. Existing players stay connected.
+
+#### `room.openAccess(): Promise<void>`
+Re-opens the room after `closeAccess()`.
+
+#### `room.enableSwipeGestures(enabled: boolean): Promise<void>`
+Controls whether players can swipe-throw individual dice.
+
+#### `room.destroy(): Promise<void>`
+Disconnects the WebSocket and cleans up all listeners. Safe to call multiple times.
+
+---
+
+### Submit Forms
+
+Send forms with a submit button; receive answers via `onFormSubmit` callback.
+
+```ts
+import { TextForm, PickerForm, CheckboxForm } from "too-many-dice";
+
+await room.sendSubmitForms([
+  {
+    formId: "character-setup",
+    targetPlayer: room.players[0],
+    fields: [
+      new TextForm("name", "Character name", { placeholder: "Enter name", required: true }),
+      new PickerForm("class", "Class", ["Warrior", "Mage", "Rogue"]),
+      new CheckboxForm("veteran", "Veteran player?"),
+    ],
+    submitButton: { label: "Confirm" },
+  },
+]);
+// answers delivered via callbacks.onFormSubmit: { name: "Elara", class: "Mage", veteran: true }
+
+await room.clearSubmitForms(); // dismiss all forms
+await room.setFormErrors("character-setup", room.players[0], ["Name too short"]); // show validation errors
+```
+
+#### `room.sendSubmitForms(groups: SubmitFormGroup[]): Promise<void>`
+#### `room.clearSubmitForms(): Promise<void>`
+#### `room.setFormErrors(formId: string, player: TmdPlayer, errors: string[]): Promise<void>`
+
+---
+
+### Callback Forms
+
+React to live field changes and button clicks in real time.
+
+```ts
+import { SliderForm, DpadForm } from "too-many-dice";
+
+const handle = await room.sendCallbackForm({
+  targetPlayer: room.players[0],
+  fields: [
+    {
+      field: new SliderForm("str", "Strength", 1, 20, 1),
+      onChange: (value) => console.log("Strength:", value),
+    },
+  ],
+  buttons: [
+    { label: "Confirm", onClick: (playerId) => { handle.clear(); } },
+  ],
+});
+
+await handle.clear(); // dismiss manually
+```
+
+#### `room.sendCallbackForm(options: CallbackFormOptions): Promise<CallbackFormHandle>`
+
+---
+
+## Types
+
+```ts
+type DieType = "d4" | "d6" | "d8" | "d10" | "d12" | "d20";
+
+interface DiceConfig {
+  type: DieType;
+  id?: string; // optional, returned in roll results
+}
+
+interface DiceResult {
+  diceId: string;
+  value: number;
+  dieType: DieType;
+}
+
+interface CreateRoomOptions {
+  diceConfig?: DiceConfig[];
+  playerLimit?: number;
+  swipeGesturesEnabled?: boolean; // default: true
+  callbacks?: TooManyDicesCallbacks;
+}
+
+type TooManyDicesCallbacks = {
+  onPlayerJoined?: (player: TmdPlayer) => void;
+  onPlayerLeft?: (player: TmdPlayer) => void;
+  onResult?: (results: DiceResult[]) => void;
+  onFormSubmit?: (data: { formId: string; playerId: string; answers: Record<string, unknown> }) => void;
+};
+
+interface SubmitFormGroup {
+  formId: string;
+  targetPlayer: TmdPlayer;
+  fields: TmdForm[];
+  submitButton: { label: string };
+}
+
+interface CallbackFormOptions {
+  targetPlayer: TmdPlayer;
+  fields: CallbackField[];   // { field: TmdForm; onChange: (value: unknown) => void }
+  buttons?: CallbackButton[]; // { label: string; onClick: (playerId: string) => void }
+}
+
+interface CallbackFormHandle {
+  formId: string;
+  clear: () => Promise<void>;
+}
+
+type DpadVisibility = "enabled" | "disabled" | "hidden";
+```
+
+---
+
+## TmdPlayer
+
+| Property   | Type     | Description                       |
+| ---------- | -------- | --------------------------------- |
+| `playerId` | `string` | Unique identifier for this player |
+| `name`     | `string` | Display name chosen by the player |
+
+---
+
+## Form Field Classes
+
+All fields: `new FieldClass(id, label, ...args, options?)`
+Common options: `{ required?: boolean }`
+
+| Class             | Constructor                                      | Submit value  |
+| ----------------- | ------------------------------------------------ | ------------- |
+| `TextForm`        | `(id, label, { placeholder?, required? })`       | `string`      |
+| `CheckboxForm`    | `(id, label, { required? })`                     | `boolean`     |
+| `PickerForm`      | `(id, label, options: string[], { required? })`  | `string`      |
+| `MultiSelectForm` | `(id, label, options: string[], { required? })`  | `string[]`    |
+| `SliderForm`      | `(id, label, min, max, step, { required? })`     | `number`      |
+| `DpadForm`        | `(id, label, { up?, down?, left?, right?, required? })` | `string` (direction) |
+
+`DpadForm` direction config: `{ visibility?: "enabled" | "disabled" | "hidden" }`
+
+---
+
+## Complete Example: Turn-Based Game
+
+```ts
+import { TooManyDicesRoom, TextForm, PickerForm, SliderForm } from "too-many-dice";
+
+async function runGame() {
+  const characters = new Map<string, Record<string, unknown>>();
+
+  const room = await TooManyDicesRoom.create({
+    playerLimit: 2,
+    callbacks: {
+      onPlayerJoined: (p) => console.log(`${p.name} joined (${room.players.length}/2)`),
+      onFormSubmit: ({ playerId, answers }) => characters.set(playerId, answers),
+    },
+  });
+
+  console.log("Share this code:", room.roomCode);
+
+  // Wait for 2 players
+  await new Promise<void>((resolve) => {
+    const interval = setInterval(() => {
+      if (room.players.length === 2) { clearInterval(interval); resolve(); }
+    }, 500);
+  });
+
+  await room.closeAccess();
+
+  // Send character setup forms
+  await room.sendSubmitForms(
+    room.players.map((p) => ({
+      formId: `char-${p.playerId}`,
+      targetPlayer: p,
+      fields: [
+        new TextForm("name", "Character name", { required: true }),
+        new PickerForm("class", "Class", ["Warrior", "Mage", "Rogue"]),
+        new SliderForm("level", "Starting level", 1, 10, 1),
+      ],
+      submitButton: { label: "Ready!" },
+    })),
+  );
+
+  // Wait for both submissions
+  await new Promise<void>((resolve) => {
+    const interval = setInterval(() => {
+      if (characters.size === 2) { clearInterval(interval); resolve(); }
+    }, 200);
+  });
+  await room.clearSubmitForms();
+
+  // Play turns
+  await room.setDices([{ id: "atk", type: "d20" }]);
+  for (const player of room.players) {
+    const results = await room.roll(player);
+    console.log(`${player.name} rolled:`, results);
+  }
+
+  await room.destroy();
+}
+
+runGame().catch(console.error);
+```
