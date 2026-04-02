@@ -41,6 +41,15 @@ export interface CallbackFormHandle {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/** Safely parse a WebSocket message event. Returns null on parse failure. */
+function parseMessage(event: MessageEvent): any | null {
+  try {
+    return JSON.parse(event.data);
+  } catch {
+    return null;
+  }
+}
+
 function sendAndWait<T>(
   socket: PartySocket,
   msg: Record<string, any>,
@@ -183,14 +192,8 @@ export class TooManyDicesRoom {
     if (this.roomHandler) return;
 
     this.roomHandler = (event: MessageEvent) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-
-      if (msg.type !== "roomState") return;
+      const msg = parseMessage(event);
+      if (!msg || msg.type !== "roomState") return;
 
       const prev = this.roomState;
       const next = msg.data ?? null;
@@ -219,12 +222,8 @@ export class TooManyDicesRoom {
     };
 
     this.resultHandler = (event: MessageEvent) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
+      const msg = parseMessage(event);
+      if (!msg) return;
       if (msg.type === "reportResults") {
         this.callbacks.onResult?.(msg.results);
       }
@@ -291,34 +290,40 @@ export class TooManyDicesRoom {
 
       // Register listener BEFORE sending so we don't miss the rolling state
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
+        const cleanup = () => {
+          clearTimeout(timer);
           this.socket.removeEventListener("message", handler);
+          this.socket.removeEventListener("close", onClose);
+        };
+
+        const timer = setTimeout(() => {
+          cleanup();
           reject(new Error("Timeout waiting for roll to complete"));
         }, 30000);
 
+        const onClose = () => {
+          cleanup();
+          reject(new Error("Socket closed while waiting for roll"));
+        };
+
         const handler = (event: MessageEvent) => {
-          let msg: any;
-          try {
-            msg = JSON.parse(event.data);
-          } catch {
-            return;
-          }
+          const msg = parseMessage(event);
+          if (!msg) return;
 
           if (msg.type === "error") {
-            clearTimeout(timer);
-            this.socket.removeEventListener("message", handler);
+            cleanup();
             reject(new Error(msg.message));
             return;
           }
 
           if (msg.type === "reportResults") {
-            clearTimeout(timer);
-            this.socket.removeEventListener("message", handler);
+            cleanup();
             resolve(msg.results ?? []);
           }
         };
 
         this.socket.addEventListener("message", handler);
+        this.socket.addEventListener("close", onClose);
 
         this.socket.send(
           JSON.stringify({
@@ -332,7 +337,10 @@ export class TooManyDicesRoom {
     return [];
   }
 
-  async waitForRoll(player: TmdPlayer): Promise<DiceResult[]> {
+  async waitForRoll(
+    player: TmdPlayer,
+    timeoutMs = 120000,
+  ): Promise<DiceResult[]> {
     this.requireOwner();
 
     this.socket.send(
@@ -343,22 +351,38 @@ export class TooManyDicesRoom {
       }),
     );
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.socket.removeEventListener("message", handler);
+        this.socket.removeEventListener("close", onClose);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("Timeout waiting for player to roll"));
+      }, timeoutMs);
+
+      const onClose = () => {
+        cleanup();
+        reject(new Error("Socket closed while waiting for roll"));
+      };
+
       const handler = (event: MessageEvent) => {
-        let msg: any;
-        try {
-          msg = JSON.parse(event.data);
-        } catch {
-          return;
-        }
+        const msg = parseMessage(event);
+        if (!msg) return;
 
         if (msg.type === "reportResults") {
-          this.socket.removeEventListener("message", handler);
+          cleanup();
           resolve(msg.results ?? []);
+        } else if (msg.type === "error") {
+          cleanup();
+          reject(new Error(msg.message));
         }
       };
 
       this.socket.addEventListener("message", handler);
+      this.socket.addEventListener("close", onClose);
     });
   }
 
@@ -425,12 +449,8 @@ export class TooManyDicesRoom {
     // Set up a single form answer listener if not already active
     if (!this.formAnswerHandler) {
       this.formAnswerHandler = (event: MessageEvent) => {
-        let msg: any;
-        try {
-          msg = JSON.parse(event.data);
-        } catch {
-          return;
-        }
+        const msg = parseMessage(event);
+        if (!msg) return;
 
         // The server broadcasts formErrors type when a form answer is submitted
         // We need to listen for form answer submissions — the server doesn't
@@ -546,12 +566,8 @@ export class TooManyDicesRoom {
     if (this.callbackFormHandler) return;
 
     this.callbackFormHandler = (event: MessageEvent) => {
-      let msg: any;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        return;
-      }
+      const msg = parseMessage(event);
+      if (!msg) return;
 
       if (
         msg.type === "callbackFormFieldChange" &&

@@ -76,6 +76,7 @@
           <a class="sidebar-link" href="#picker-form">PickerForm</a>
           <a class="sidebar-link" href="#multi-select-form">MultiSelectForm</a>
           <a class="sidebar-link" href="#slider-form">SliderForm</a>
+          <a class="sidebar-link" href="#dpad-form">DpadForm</a>
         </div>
         <div class="sidebar-section">
           <div class="sidebar-section-title">Reference</div>
@@ -316,13 +317,18 @@ const results = await room.roll(room.players[0]);</code></pre>
         <hr />
 
         <!-- waitForRoll -->
-        <h2 id="wait-for-roll">room.waitForRoll(player)</h2>
+        <h2 id="wait-for-roll">room.waitForRoll(player, timeoutMs?)</h2>
         <p>
           Waits for a specific player to manually roll (shake or tap in the
-          app). The player initiates the roll themselves.
+          app). The player initiates the roll themselves. Times out after
+          <code>timeoutMs</code> milliseconds (default: 120,000 = 2 minutes).
+          Also rejects if the socket closes or the server sends an error.
         </p>
         <div class="code-block">
-          <pre><code class="language-javascript">const results = await room.waitForRoll(room.players[0]);</code></pre>
+          <pre><code class="language-javascript">const results = await room.waitForRoll(room.players[0]);
+
+// With custom timeout (60 seconds)
+const results = await room.waitForRoll(room.players[0], 60000);</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
         </div>
         <p class="returns-label">
@@ -718,6 +724,37 @@ new SliderForm("hp", "Hit Points", 1, 100, 5, { required: true });</code></pre>
         </div>
         <p>Submit value: <code>number</code></p>
 
+        <h2 id="dpad-form">DpadForm</h2>
+        <p>A directional pad control with four configurable directions.</p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new DpadForm("move", "Move Direction");
+new DpadForm("move", "Move", {
+  up: { visibility: "enabled" },
+  down: { visibility: "disabled" },
+  left: { visibility: "hidden" },
+  required: true,
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>Submit value: <code>string</code> (the selected direction)</p>
+        <h4>DpadDirectionConfig</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>visibility</code></td>
+              <td><code>DpadVisibility</code></td>
+              <td><code>"enabled" | "disabled" | "hidden"</code></td>
+            </tr>
+          </tbody>
+        </table>
+
         <hr />
 
         <!-- Types -->
@@ -735,6 +772,9 @@ new SliderForm("hp", "Hit Points", 1, 100, 5, { required: true });</code></pre>
   CallbackFormOptions,
   CallbackFormHandle,
   TmdForm,
+  DpadVisibility,
+  DpadDirectionConfig,
+  DpadFieldDef,
 } from "too-many-dice";</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
         </div>

@@ -14,6 +14,7 @@ export {
   PickerForm,
   MultiSelectForm,
   SliderForm,
+  DpadForm,
 } from "./forms";
 export type { TmdForm } from "./forms";
 export type {

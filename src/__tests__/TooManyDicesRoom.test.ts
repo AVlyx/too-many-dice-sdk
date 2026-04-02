@@ -88,7 +88,7 @@ async function makeOwnerRoom(
       );
     }
   });
-  return TooManyDicesRoom.create("localhost:1999", { callbacks });
+  return TooManyDicesRoom.create("too-many-dice.avlyx.partykit.dev", { callbacks });
 }
 
 function triggerRoomUpdate(data: any) {
@@ -127,7 +127,7 @@ describe("TooManyDicesRoom.create()", () => {
         );
       }
     });
-    await TooManyDicesRoom.create("localhost:1999", {
+    await TooManyDicesRoom.create("too-many-dice.avlyx.partykit.dev", {
       playerLimit: 4,
       diceConfig: [{ id: "d1", type: "d6" }],
     });

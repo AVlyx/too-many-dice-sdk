@@ -63,12 +63,27 @@ export interface SliderFieldDef extends FormFieldBase {
   step: number;
 }
 
+export type DpadVisibility = "enabled" | "disabled" | "hidden";
+
+export interface DpadDirectionConfig {
+  visibility?: DpadVisibility;
+}
+
+export interface DpadFieldDef extends FormFieldBase {
+  type: "Dpad";
+  up?: DpadDirectionConfig;
+  down?: DpadDirectionConfig;
+  left?: DpadDirectionConfig;
+  right?: DpadDirectionConfig;
+}
+
 export type FormFieldDef =
   | TextAnswerFieldDef
   | PickerFieldDef
   | MultiSelectFieldDef
   | CheckboxFieldDef
-  | SliderFieldDef;
+  | SliderFieldDef
+  | DpadFieldDef;
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 

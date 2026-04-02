@@ -6,7 +6,8 @@ import {
   PickerForm,
   MultiSelectForm,
   SliderForm,
-} from "https://esm.sh/too-many-dice@0.1.1";
+  DpadForm,
+} from "https://esm.sh/too-many-dice@0.1.2";
 
 // ── State ──
 let room = null;
@@ -295,7 +296,7 @@ document.getElementById("btn-enable-swipe").addEventListener("click", async () =
 });
 
 // ── Field Builder ──
-const FIELD_TYPES = ["Text", "Checkbox", "Picker", "MultiSelect", "Slider"];
+const FIELD_TYPES = ["Text", "Checkbox", "Picker", "MultiSelect", "Slider", "Dpad"];
 
 function createFieldItem(container) {
   const item = document.createElement("div");
@@ -340,6 +341,42 @@ function createFieldItem(container) {
         <label>Step</label>
         <input type="number" class="field-step" value="1">
       </div>
+      <div class="config-row config-dpad" style="display:none">
+        <label>Up</label>
+        <select class="field-dpad-up">
+          <option value="">default</option>
+          <option value="enabled">enabled</option>
+          <option value="disabled">disabled</option>
+          <option value="hidden">hidden</option>
+        </select>
+      </div>
+      <div class="config-row config-dpad" style="display:none">
+        <label>Down</label>
+        <select class="field-dpad-down">
+          <option value="">default</option>
+          <option value="enabled">enabled</option>
+          <option value="disabled">disabled</option>
+          <option value="hidden">hidden</option>
+        </select>
+      </div>
+      <div class="config-row config-dpad" style="display:none">
+        <label>Left</label>
+        <select class="field-dpad-left">
+          <option value="">default</option>
+          <option value="enabled">enabled</option>
+          <option value="disabled">disabled</option>
+          <option value="hidden">hidden</option>
+        </select>
+      </div>
+      <div class="config-row config-dpad" style="display:none">
+        <label>Right</label>
+        <select class="field-dpad-right">
+          <option value="">default</option>
+          <option value="enabled">enabled</option>
+          <option value="disabled">disabled</option>
+          <option value="hidden">hidden</option>
+        </select>
+      </div>
     </div>
   `;
 
@@ -352,6 +389,7 @@ function createFieldItem(container) {
     item.querySelector(".config-min").style.display = t === "Slider" ? "flex" : "none";
     item.querySelector(".config-max").style.display = t === "Slider" ? "flex" : "none";
     item.querySelector(".config-step").style.display = t === "Slider" ? "flex" : "none";
+    item.querySelectorAll(".config-dpad").forEach((r) => (r.style.display = t === "Dpad" ? "flex" : "none"));
   };
   typeSelect.addEventListener("change", updateVisibility);
   updateVisibility();
@@ -398,6 +436,19 @@ function buildFormField(item) {
       const step = parseFloat(item.querySelector(".field-step").value) || 1;
       return new SliderForm(id, label, min, max, step, required ? { required: true } : undefined);
     }
+    case "Dpad": {
+      const opts = {};
+      if (required) opts.required = true;
+      const up = item.querySelector(".field-dpad-up")?.value;
+      const down = item.querySelector(".field-dpad-down")?.value;
+      const left = item.querySelector(".field-dpad-left")?.value;
+      const right = item.querySelector(".field-dpad-right")?.value;
+      if (up) opts.up = { visibility: up };
+      if (down) opts.down = { visibility: down };
+      if (left) opts.left = { visibility: left };
+      if (right) opts.right = { visibility: right };
+      return new DpadForm(id, label, Object.keys(opts).length ? opts : undefined);
+    }
   }
 }
 
@@ -421,13 +472,18 @@ document.getElementById("btn-sf-send").addEventListener("click", async () => {
     return;
   }
 
+  if (!submitLabel) {
+    log("Submit label is required.", "error");
+    return;
+  }
+
   const fields = Array.from(fieldItems).map(buildFormField);
   const group = {
     formId,
     targetPlayer: player,
     fields,
+    submitButton: { label: submitLabel },
   };
-  if (submitLabel) group.submitButton = { label: submitLabel };
 
   try {
     await room.sendSubmitForms([group]);

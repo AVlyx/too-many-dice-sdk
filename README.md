@@ -137,12 +137,15 @@ Throws if no players are connected, or times out after 30 seconds.
 
 ---
 
-##### `room.waitForRoll(player)`
+##### `room.waitForRoll(player, timeoutMs?)`
 
-Waits for a specific player to manually roll (shake or tap in the app). The player initiates the roll themselves.
+Waits for a specific player to manually roll (shake or tap in the app). The player initiates the roll themselves. Times out after `timeoutMs` milliseconds (default: 120,000 = 2 minutes). Also rejects if the socket closes or the server sends an error.
 
 ```ts
 const results = await room.waitForRoll(room.players[0]);
+
+// With custom timeout (60 seconds)
+const results = await room.waitForRoll(room.players[0], 60000);
 ```
 
 **Returns:** `Promise<DiceResult[]>`
@@ -288,11 +291,11 @@ await room.setFormErrors("character-setup", room.players[0], [
 
 **`SubmitFormGroup`:**
 
-| Field          | Type                | Description                                                         |
-| -------------- | ------------------- | ------------------------------------------------------------------- |
-| `formId`       | `string`            | Unique identifier for this form                                     |
-| `targetPlayer` | `TmdPlayer`         | The player who sees this form                                       |
-| `fields`       | `TmdForm[]`         | Array of form field instances                                       |
+| Field          | Type                | Description                           |
+| -------------- | ------------------- | ------------------------------------- |
+| `formId`       | `string`            | Unique identifier for this form       |
+| `targetPlayer` | `TmdPlayer`         | The player who sees this form         |
+| `fields`       | `TmdForm[]`         | Array of form field instances         |
 | `submitButton` | `{ label: string }` | The submit button shown to the player |
 
 ---
@@ -441,6 +444,30 @@ Submit value: `number`
 
 ---
 
+#### `DpadForm`
+
+A directional pad control with four configurable directions.
+
+```ts
+new DpadForm("move", "Move Direction");
+new DpadForm("move", "Move", {
+  up: { visibility: "enabled" },
+  down: { visibility: "disabled" },
+  left: { visibility: "hidden" },
+  required: true,
+});
+```
+
+Submit value: `string` (the selected direction)
+
+**`DpadDirectionConfig`:**
+
+| Field        | Type             | Description                             |
+| ------------ | ---------------- | --------------------------------------- |
+| `visibility` | `DpadVisibility` | `"enabled" \| "disabled" \| "hidden"` |
+
+---
+
 ## Complete Example: Turn-Based Game
 
 ```ts
@@ -538,16 +565,8 @@ import type {
   CallbackFormOptions,
   CallbackFormHandle,
   TmdForm,
+  DpadVisibility,
+  DpadDirectionConfig,
+  DpadFieldDef,
 } from "too-many-dice";
 ```
-
----
-
-## Hosts
-
-| Environment       | Host                          |
-| ----------------- | ----------------------------- |
-| Local development | `"localhost:1999"`            |
-| Production        | Your PartyKit deployment host |
-
-The SDK automatically uses `http://` for localhost and `https://` for all other hosts.
