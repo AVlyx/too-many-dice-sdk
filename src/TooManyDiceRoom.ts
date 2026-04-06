@@ -130,17 +130,39 @@ export class TooManyDiceRoom {
     partykitHost: string = "too-many-dice.avlyx.partykit.dev",
     options?: CreateRoomOptions,
   ): Promise<TooManyDiceRoom> {
-    const protocol = partykitHost.includes("localhost") ? "http" : "https";
-    const res = await fetch(`${protocol}://${partykitHost}/parties/main/new`, {
-      method: "POST",
-    });
-    const { roomCode } = await res.json();
+    const isLocal =
+      partykitHost.startsWith("localhost") ||
+      partykitHost.startsWith("127.0.0.1");
+    const protocol = isLocal ? "http" : "https";
+
+    // POST to the backend to create the room (code + state initialized server-side)
+    const response = await fetch(
+      `${protocol}://${partykitHost}/parties/main/new`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerLimit: options?.playerLimit,
+          diceConfig: options?.diceConfig,
+          swipeGesturesEnabled: options?.swipeGesturesEnabled,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      throw new Error(`Failed to create room: ${response.status} ${errBody}`);
+    }
+
+    const result: { roomCode: string; ownerToken: string } =
+      await response.json();
+
+    // Connect via WebSocket to the already-initialized room
     const socket = new PartySocket({
       host: partykitHost,
-      room: roomCode,
+      room: result.roomCode,
     });
 
-    // Wait for connection
     await new Promise<void>((resolve, reject) => {
       const onOpen = () => {
         socket.removeEventListener("open", onOpen);
@@ -159,21 +181,6 @@ export class TooManyDiceRoom {
         socket.addEventListener("error", onError);
       }
     });
-
-    const result = await sendAndWait<{
-      type: string;
-      roomCode: string;
-      ownerToken: string;
-    }>(
-      socket,
-      {
-        type: "sdk:createApiRoom",
-        playerLimit: options?.playerLimit,
-        diceConfig: options?.diceConfig,
-        swipeGesturesEnabled: options?.swipeGesturesEnabled,
-      },
-      "apiCreated",
-    );
 
     const room = new TooManyDiceRoom(
       socket,

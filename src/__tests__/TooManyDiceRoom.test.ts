@@ -60,6 +60,7 @@ vi.mock("partysocket", () => ({
 import PartySocket from "partysocket";
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   mockSocket = makeMockSocket();
   vi.mocked(PartySocket).mockImplementation(function () {
     // Auto-trigger open on next tick to simulate connection
@@ -73,21 +74,13 @@ beforeEach(() => {
 async function makeOwnerRoom(
   callbacks: TooManyDiceCallbacks = {},
 ): Promise<TooManyDiceRoom> {
-  // When send is called with createApiRoom, trigger the apiCreated response
-  mockSocket.send.mockImplementation((raw: string) => {
-    const msg = JSON.parse(raw);
-    if (msg.type === "sdk:createApiRoom") {
-      setTimeout(
-        () =>
-          mockSocket._triggerMessage({
-            type: "apiCreated",
-            roomCode: "ABC123",
-            ownerToken: "tok_xyz",
-          }),
-        0,
-      );
-    }
-  });
+  // Mock fetch to handle the POST room creation
+  vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+    new Response(JSON.stringify({ roomCode: "ABC123", ownerToken: "tok_xyz" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
   return TooManyDiceRoom.create("too-many-dice.avlyx.partykit.dev", { callbacks });
 }
 
@@ -112,28 +105,22 @@ describe("TooManyDiceRoom.create()", () => {
     expect(room.playerLimit).toBeNull();
   });
 
-  it("passes playerLimit and diceConfig to createApiRoom", async () => {
-    mockSocket.send.mockImplementation((raw: string) => {
-      const msg = JSON.parse(raw);
-      if (msg.type === "sdk:createApiRoom") {
-        setTimeout(
-          () =>
-            mockSocket._triggerMessage({
-              type: "apiCreated",
-              roomCode: "XYZ",
-              ownerToken: "tok",
-            }),
-          0,
-        );
-      }
-    });
+  it("passes playerLimit and diceConfig to the creation POST", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ roomCode: "XYZ", ownerToken: "tok" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
     await TooManyDiceRoom.create("too-many-dice.avlyx.partykit.dev", {
       playerLimit: 4,
       diceConfig: [{ id: "d1", type: "d6" }],
     });
-    expect(mockSocket.send).toHaveBeenCalledWith(
-      expect.stringContaining('"playerLimit":4'),
-    );
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [, init] = fetchSpy.mock.calls[0];
+    const body = JSON.parse((init as any).body as string);
+    expect(body.playerLimit).toBe(4);
+    expect(body.diceConfig).toEqual([{ id: "d1", type: "d6" }]);
   });
 });
 
