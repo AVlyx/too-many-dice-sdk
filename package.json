@@ -1,6 +1,6 @@
 {
   "name": "too-many-dice",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "TypeScript SDK for TooManyDice online game API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
+    "deploy": "npm run build && npm publish",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run --exclude src/__tests__/integration.test.ts",
     "test:watch": "vitest --exclude src/__tests__/integration.test.ts",

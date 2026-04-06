@@ -7,7 +7,7 @@ import {
   MultiSelectForm,
   SliderForm,
   DpadForm,
-} from "https://esm.sh/too-many-dice@0.1.6";
+} from "https://esm.sh/too-many-dice@0.1.7";
 
 // ── State ──
 let room = null;
