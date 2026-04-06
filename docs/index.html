@@ -159,7 +159,7 @@ await room.destroy();</code></pre>
         </div>
 
         <h4>Options (<code>CreateRoomOptions</code>)</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -192,14 +192,14 @@ await room.destroy();</code></pre>
               <td>Event handlers</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
         <p class="returns-label">
           Returns: <code>Promise&lt;TooManyDiceRoom&gt;</code>
         </p>
 
         <!-- Properties -->
         <h2 id="properties">Properties</h2>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Property</th>
@@ -224,7 +224,7 @@ await room.destroy();</code></pre>
               <td>Currently connected players</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -239,7 +239,7 @@ await room.destroy();</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
         </div>
         <h4>DiceConfig</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -259,7 +259,7 @@ await room.destroy();</code></pre>
               <td>Optional identifier (returned in roll results)</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -283,7 +283,7 @@ const results = await room.roll(room.players[0]);</code></pre>
         </p>
 
         <h4>DiceResult</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -308,7 +308,7 @@ const results = await room.roll(room.players[0]);</code></pre>
               <td>The die type</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
         <p>
           Throws if no players are connected, or times out after 30 seconds.
         </p>
@@ -406,7 +406,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
 });</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
         </div>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Callback</th>
@@ -438,14 +438,14 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
               <td>Fired when a player submits a form</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
         <!-- TmdPlayer -->
         <h2 id="tmd-player">TmdPlayer</h2>
         <p>Represents a connected player.</p>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Property</th>
@@ -465,7 +465,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
               <td>Display name chosen by the player</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -475,7 +475,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
           Forms are UI overlays pushed to a player's screen in the TooManyDice
           app. There are two form modes:
         </p>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Mode</th>
@@ -495,7 +495,7 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
               <td>React to live field changes and custom buttons</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
         <p>A player can only have one form active at a time.</p>
 
         <!-- Submit Forms -->
@@ -543,7 +543,7 @@ await room.sendSubmitForms([
         </div>
 
         <h4>SubmitFormGroup</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -573,7 +573,7 @@ await room.sendSubmitForms([
               <td>The submit button shown to the player</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <!-- Callback Forms -->
         <h3 id="callback-forms">Callback Forms</h3>
@@ -615,7 +615,7 @@ await handle.clear();</code></pre>
         </div>
 
         <h4>CallbackFormOptions</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -640,10 +640,10 @@ await handle.clear();</code></pre>
               <td>Optional action buttons</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <h4>CallbackFormHandle</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Member</th>
@@ -663,7 +663,7 @@ await handle.clear();</code></pre>
               <td>Dismiss the form and remove all listeners</td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -737,7 +737,7 @@ new DpadForm("move", "Move", {
         </div>
         <p>Submit value: <code>string</code> (the selected direction)</p>
         <h4>DpadDirectionConfig</h4>
-        <table>
+        <div class="table-wrap"><table>
           <thead>
             <tr>
               <th>Field</th>
@@ -752,7 +752,7 @@ new DpadForm("move", "Move", {
               <td><code>"enabled" | "disabled" | "hidden"</code></td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
 
         <hr />
 

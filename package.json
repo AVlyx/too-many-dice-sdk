@@ -1,6 +1,6 @@
 {
   "name": "too-many-dice",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "TypeScript SDK for TooManyDice online game API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,7 +38,10 @@
     "partysocket": "^1.1.16"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.3.0",
+    "sharp": "^0.34.5",
     "tsup": "^8.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.0",
     "vitest": "^4.1.1"
   }
