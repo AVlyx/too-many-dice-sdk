@@ -1,11 +1,6 @@
 import PartySocket from "partysocket";
 import { TmdPlayer } from "./TmdPlayer";
-import type {
-  CreateRoomOptions,
-  DiceConfig,
-  DiceResult,
-  TooManyDiceCallbacks,
-} from "./types";
+import type { CreateRoomOptions, DiceConfig, DiceResult, TooManyDiceCallbacks } from "./types";
 import type { TmdForm } from "./forms";
 
 export interface SubmitFormGroup {
@@ -50,44 +45,11 @@ function parseMessage(event: MessageEvent): any | null {
   }
 }
 
-function sendAndWait<T>(
-  socket: PartySocket,
-  msg: Record<string, any>,
-  responseType: string,
-  timeoutMs = 10000,
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      socket.removeEventListener("message", handler);
-      reject(new Error(`Timeout waiting for ${responseType}`));
-    }, timeoutMs);
-
-    function handler(event: MessageEvent) {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === responseType) {
-          clearTimeout(timer);
-          socket.removeEventListener("message", handler);
-          resolve(data as T);
-        } else if (data.type === "error") {
-          clearTimeout(timer);
-          socket.removeEventListener("message", handler);
-          reject(new Error(data.message));
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
-    socket.addEventListener("message", handler);
-    socket.send(JSON.stringify(msg));
-  });
-}
-
 // ─── Room Class ─────────────────────────────────────────────────────────────
 
 export class TooManyDiceRoom {
   readonly roomCode: string;
+  readonly qrCodeUrl: string;
   readonly ownerToken: string | null;
   readonly playerLimit: number | null;
 
@@ -104,10 +66,7 @@ export class TooManyDiceRoom {
   private seenAnswers = new Set<string>();
   private subscribedFormIds = new Set<string>();
   private callbackFieldHandlers = new Map<string, (value: unknown) => void>();
-  private callbackButtonHandlers = new Map<
-    string,
-    (playerId: string) => void
-  >();
+  private callbackButtonHandlers = new Map<string, (playerId: string) => void>();
   private callbackFormIds = new Set<string>();
 
   private constructor(
@@ -119,6 +78,7 @@ export class TooManyDiceRoom {
   ) {
     this.socket = socket;
     this.roomCode = roomCode;
+    this.qrCodeUrl = `https://too-many-dice.com/join/${roomCode}`;
     this.ownerToken = ownerToken;
     this.playerLimit = playerLimit;
     this.callbacks = callbacks;
@@ -130,32 +90,26 @@ export class TooManyDiceRoom {
     partykitHost: string = "too-many-dice.avlyx.partykit.dev",
     options?: CreateRoomOptions,
   ): Promise<TooManyDiceRoom> {
-    const isLocal =
-      partykitHost.startsWith("localhost") ||
-      partykitHost.startsWith("127.0.0.1");
+    const isLocal = partykitHost.startsWith("localhost") || partykitHost.startsWith("127.0.0.1");
     const protocol = isLocal ? "http" : "https";
 
     // POST to the backend to create the room (code + state initialized server-side)
-    const response = await fetch(
-      `${protocol}://${partykitHost}/parties/main/new`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerLimit: options?.playerLimit,
-          diceConfig: options?.diceConfig,
-          swipeGesturesEnabled: options?.swipeGesturesEnabled,
-        }),
-      },
-    );
+    const response = await fetch(`${protocol}://${partykitHost}/parties/main/new`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playerLimit: options?.playerLimit,
+        diceConfig: options?.diceConfig,
+        swipeGesturesEnabled: options?.swipeGesturesEnabled,
+      }),
+    });
 
     if (!response.ok) {
       const errBody = await response.text();
       throw new Error(`Failed to create room: ${response.status} ${errBody}`);
     }
 
-    const result: { roomCode: string; ownerToken: string } =
-      await response.json();
+    const result: { roomCode: string; ownerToken: string } = await response.json();
 
     // Connect via WebSocket to the already-initialized room
     const socket = new PartySocket({
@@ -267,9 +221,9 @@ export class TooManyDiceRoom {
 
   get players(): readonly TmdPlayer[] {
     if (!this.roomState?.players) return [];
-    return (
-      this.roomState.players as Array<{ userId: string; name: string }>
-    ).map((p) => new TmdPlayer(p.userId, p.name));
+    return (this.roomState.players as Array<{ userId: string; name: string }>).map(
+      (p) => new TmdPlayer(p.userId, p.name),
+    );
   }
 
   // ─── Dice ────────────────────────────────────────────────────────────────────
@@ -344,10 +298,7 @@ export class TooManyDiceRoom {
     return [];
   }
 
-  async waitForRoll(
-    player: TmdPlayer,
-    timeoutMs = 120000,
-  ): Promise<DiceResult[]> {
+  async waitForRoll(player: TmdPlayer, timeoutMs = 120000): Promise<DiceResult[]> {
     this.requireOwner();
 
     this.socket.send(
@@ -464,10 +415,7 @@ export class TooManyDiceRoom {
         // have a separate "formAnswer" message type in the current protocol.
         // For SDK form answers, we rely on the server echoing back via a
         // dedicated message. Let's handle it here.
-        if (
-          msg.type === "formAnswer" &&
-          this.subscribedFormIds.has(msg.formId)
-        ) {
+        if (msg.type === "formAnswer" && this.subscribedFormIds.has(msg.formId)) {
           this.handleFormAnswer(msg.formId, msg.playerId, msg.answers);
         }
       };
@@ -493,20 +441,14 @@ export class TooManyDiceRoom {
 
   // ─── Callback Forms ──────────────────────────────────────────────────────
 
-  async sendCallbackForm(
-    options: CallbackFormOptions,
-  ): Promise<CallbackFormHandle> {
+  async sendCallbackForm(options: CallbackFormOptions): Promise<CallbackFormHandle> {
     this.requireOwner();
 
-    const formId =
-      "cb_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const formId = "cb_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 
     // Register field callbacks
     for (const cf of options.fields) {
-      this.callbackFieldHandlers.set(
-        `${formId}:${cf.field.toField().id}`,
-        cf.onChange,
-      );
+      this.callbackFieldHandlers.set(`${formId}:${cf.field.toField().id}`, cf.onChange);
     }
 
     // Register button callbacks
@@ -552,12 +494,10 @@ export class TooManyDiceRoom {
         // Clean up local state
         this.callbackFormIds.delete(formId);
         for (const key of [...this.callbackFieldHandlers.keys()]) {
-          if (key.startsWith(`${formId}:`))
-            this.callbackFieldHandlers.delete(key);
+          if (key.startsWith(`${formId}:`)) this.callbackFieldHandlers.delete(key);
         }
         for (const key of [...this.callbackButtonHandlers.keys()]) {
-          if (key.startsWith(`${formId}:`))
-            this.callbackButtonHandlers.delete(key);
+          if (key.startsWith(`${formId}:`)) this.callbackButtonHandlers.delete(key);
         }
         if (this.callbackFormIds.size === 0 && this.callbackFormHandler) {
           this.socket.removeEventListener("message", this.callbackFormHandler);
@@ -576,18 +516,12 @@ export class TooManyDiceRoom {
       const msg = parseMessage(event);
       if (!msg) return;
 
-      if (
-        msg.type === "callbackFormFieldChange" &&
-        this.callbackFormIds.has(msg.formId)
-      ) {
+      if (msg.type === "callbackFormFieldChange" && this.callbackFormIds.has(msg.formId)) {
         const key = `${msg.formId}:${msg.fieldId}`;
         this.callbackFieldHandlers.get(key)?.(msg.value);
       }
 
-      if (
-        msg.type === "callbackFormButtonClick" &&
-        this.callbackFormIds.has(msg.formId)
-      ) {
+      if (msg.type === "callbackFormButtonClick" && this.callbackFormIds.has(msg.formId)) {
         const key = `${msg.formId}:${msg.buttonId}`;
         this.callbackButtonHandlers.get(key)?.(msg.playerId);
       }
@@ -596,11 +530,7 @@ export class TooManyDiceRoom {
     this.socket.addEventListener("message", this.callbackFormHandler);
   }
 
-  async setFormErrors(
-    formId: string,
-    player: TmdPlayer,
-    errors: string[],
-  ): Promise<void> {
+  async setFormErrors(formId: string, player: TmdPlayer, errors: string[]): Promise<void> {
     this.requireOwner();
     this.socket.send(
       JSON.stringify({
@@ -626,11 +556,7 @@ export class TooManyDiceRoom {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  private handleFormAnswer(
-    formId: string,
-    playerId: string,
-    answers: any,
-  ): void {
+  private handleFormAnswer(formId: string, playerId: string, answers: any): void {
     const key = `${formId}:${playerId}`;
     if (this.seenAnswers.has(key)) return;
     this.seenAnswers.add(key);
@@ -643,9 +569,7 @@ export class TooManyDiceRoom {
 
   private requireOwner(): void {
     if (!this.ownerToken) {
-      throw new Error(
-        "This operation requires room ownership (use TooManyDiceRoom.create)",
-      );
+      throw new Error("This operation requires room ownership (use TooManyDiceRoom.create)");
     }
   }
 }

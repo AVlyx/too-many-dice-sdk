@@ -25,9 +25,15 @@ const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
 });
 
 console.log("Room code:", room.roomCode); // Share this with players
+```
 
-// 2. Players open the TooManyDice app and enter the room code.
+```tsx
+// 2. Players open the TooManyDice app and enter the room code or scan the qrCode
+import { QRCodeSVG } from "qrcode.react";
+<QRCodeSVG value={room.qrCodeUrl} size={180} />
+```
 
+```ts
 // 3. Trigger a roll once players are connected
 const results = await room.roll();
 console.log(results); // [{ diceId: "0", value: 4, dieType: "d6" }, { diceId: "1", value: 2, dieType: "d6" }]
