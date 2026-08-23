@@ -20,6 +20,11 @@ export type TooManyDiceCallbacks = {
     playerId: string;
     answers: Record<string, unknown>;
   }) => void;
+  /**
+   * Fired when a player taps "Settings" in the room's overflow menu. The
+   * button only exists when this callback is supplied at room creation.
+   */
+  settingsCallback?: (player: import("./TmdPlayer").TmdPlayer) => void;
 };
 
 export interface CreateRoomOptions {
@@ -77,13 +82,22 @@ export interface DpadFieldDef extends FormFieldBase {
   right?: DpadDirectionConfig;
 }
 
+/** Display-only text. Has no value and never appears in submitted answers. */
+export interface MessageFieldDef {
+  type: "Message";
+  id: string;
+  text: string;
+  color?: string;
+}
+
 export type FormFieldDef =
   | TextAnswerFieldDef
   | PickerFieldDef
   | MultiSelectFieldDef
   | CheckboxFieldDef
   | SliderFieldDef
-  | DpadFieldDef;
+  | DpadFieldDef
+  | MessageFieldDef;
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 

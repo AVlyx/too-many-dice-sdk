@@ -68,6 +68,7 @@
           <a class="sidebar-link" href="#forms-overview">Overview</a>
           <a class="sidebar-link" href="#submit-forms">Submit Forms</a>
           <a class="sidebar-link" href="#callback-forms">Callback Forms</a>
+          <a class="sidebar-link" href="#settings-button">Settings Button</a>
         </div>
         <div class="sidebar-section">
           <div class="sidebar-section-title">Form Fields</div>
@@ -77,6 +78,7 @@
           <a class="sidebar-link" href="#multi-select-form">MultiSelectForm</a>
           <a class="sidebar-link" href="#slider-form">SliderForm</a>
           <a class="sidebar-link" href="#dpad-form">DpadForm</a>
+          <a class="sidebar-link" href="#message-form">MessageForm</a>
         </div>
         <div class="sidebar-section">
           <div class="sidebar-section-title">Reference</div>
@@ -402,6 +404,16 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
     onFormSubmit({ formId, playerId, answers }) {
       console.log(`Player ${playerId} submitted form ${formId}:`, answers);
     },
+    settingsCallback(player) {
+      // Player tapped "Settings" — respond with a form
+      room.sendSubmitForms([{
+        formId: `settings-${player.playerId}`,
+        targetPlayer: player,
+        title: "Game Settings",
+        fields: [new CheckboxForm("sound", "Sound effects")],
+        submitButton: { label: "Save" },
+      }]);
+    },
   },
 });</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
@@ -436,6 +448,16 @@ await room.enableSwipeGestures(true);  // re-enable</code></pre>
                 <code>(data: { formId, playerId, answers }) =&gt; void</code>
               </td>
               <td>Fired when a player submits a form</td>
+            </tr>
+            <tr>
+              <td><code>settingsCallback</code></td>
+              <td><code>(player: TmdPlayer) =&gt; void</code></td>
+              <td>
+                Fired when a player taps <strong>Settings</strong> in the app's
+                <code>&bull;&bull;&bull;</code> menu. Supplying this callback is
+                what makes the entry appear &mdash; see
+                <a href="#settings-button">Settings Button</a>.
+              </td>
             </tr>
           </tbody>
         </table></div>
@@ -511,6 +533,7 @@ await room.sendSubmitForms([
   {
     formId: "character-setup",
     targetPlayer: room.players[0],
+    title: "Create your character",
     fields: [
       new TextForm("name", "Character name", {
         placeholder: "Enter name",
@@ -563,6 +586,11 @@ await room.sendSubmitForms([
               <td>The player who sees this form</td>
             </tr>
             <tr>
+              <td><code>title</code></td>
+              <td><code>string</code></td>
+              <td>Optional heading shown above the fields</td>
+            </tr>
+            <tr>
               <td><code>fields</code></td>
               <td><code>TmdForm[]</code></td>
               <td>Array of form field instances</td>
@@ -586,7 +614,10 @@ let selectedPerks = [];
 
 const handle = await room.sendCallbackForm({
   targetPlayer: room.players[0],
+  title: "Build your fighter",
   fields: [
+    // Display-only fields need no onChange
+    { field: new MessageForm("hint", "Perks are permanent.", { color: "#e94560" }) },
     {
       field: new SliderForm("str", "Strength", 1, 20, 1),
       onChange: (value) =&gt; { currentStrength = value; },
@@ -630,9 +661,18 @@ await handle.clear();</code></pre>
               <td>The player who sees this form</td>
             </tr>
             <tr>
+              <td><code>title</code></td>
+              <td><code>string</code></td>
+              <td>Optional heading shown above the fields</td>
+            </tr>
+            <tr>
               <td><code>fields</code></td>
               <td><code>CallbackField[]</code></td>
-              <td>Fields with <code>onChange</code> handlers</td>
+              <td>
+                Fields with <code>onChange</code> handlers.
+                <code>onChange</code> is optional &mdash; omit it for
+                display-only fields such as <code>MessageForm</code>.
+              </td>
             </tr>
             <tr>
               <td><code>buttons</code></td>
@@ -664,6 +704,39 @@ await handle.clear();</code></pre>
             </tr>
           </tbody>
         </table></div>
+
+        <!-- Settings Button -->
+        <h3 id="settings-button">Settings Button</h3>
+        <p>
+          Supply a <code>settingsCallback</code> at room creation and the app
+          adds a <strong>Settings</strong> entry to the room's
+          <code>&bull;&bull;&bull;</code> overflow menu. Tapping it invokes your
+          callback, which typically answers by sending a form.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">const room = await TooManyDiceRoom.create(host, {
+  callbacks: {
+    settingsCallback: (player) =&gt; {
+      room.sendSubmitForms([{
+        formId: `settings-${player.playerId}`,
+        targetPlayer: player,
+        title: "Game Settings",
+        fields: [
+          new MessageForm("note", "Changes apply next round."),
+          new CheckboxForm("sound", "Sound effects"),
+        ],
+        submitButton: { label: "Save" },
+      }]);
+    },
+  },
+});</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <p>
+          Omit the callback and the entry never appears. This is decided at
+          creation time &mdash; assigning the callback to an existing room has
+          no effect.
+        </p>
 
         <hr />
 
@@ -754,6 +827,39 @@ new DpadForm("move", "Move", {
           </tbody>
         </table></div>
 
+        <h2 id="message-form">MessageForm</h2>
+        <p>
+          Static text shown inside a form &mdash; instructions, warnings,
+          results. Unlike every other field it takes <code>text</code> rather
+          than a <code>label</code>, has no input, and cannot be required.
+        </p>
+        <div class="code-block">
+          <pre><code class="language-javascript">new MessageForm("intro", "Choose carefully -- this cannot be undone.");
+new MessageForm("warning", "You are low on HP!", { color: "#e94560" });</code></pre>
+          <button class="copy-btn" data-copy>Copy</button>
+        </div>
+        <h4>MessageFormOptions</h4>
+        <div class="table-wrap"><table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>color</code></td>
+              <td><code>string</code></td>
+              <td>Text colour, any CSS colour string (default: white)</td>
+            </tr>
+          </tbody>
+        </table></div>
+        <p>
+          Submit value: <strong>none</strong>. The field's <code>id</code> never
+          appears in <code>answers</code>.
+        </p>
+
         <hr />
 
         <!-- Types -->
@@ -775,6 +881,8 @@ new DpadForm("move", "Move", {
   DpadDirectionConfig,
   DpadFieldDef,
   DpadFormOptions,
+  MessageFieldDef,
+  MessageFormOptions,
 } from "too-many-dice";</code></pre>
           <button class="copy-btn" data-copy>Copy</button>
         </div>

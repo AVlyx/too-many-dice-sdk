@@ -1,6 +1,6 @@
 {
   "name": "too-many-dice",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "description": "TypeScript SDK for TooManyDice online game API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

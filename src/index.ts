@@ -15,8 +15,9 @@ export {
   MultiSelectForm,
   SliderForm,
   DpadForm,
+  MessageForm,
 } from "./forms";
-export type { TmdForm, DpadFormOptions } from "./forms";
+export type { TmdForm, DpadFormOptions, MessageFormOptions } from "./forms";
 export type {
   CreateRoomOptions,
   DiceConfig,
@@ -27,4 +28,5 @@ export type {
   DpadVisibility,
   DpadDirectionConfig,
   DpadFieldDef,
+  MessageFieldDef,
 } from "./types";

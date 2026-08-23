@@ -122,6 +122,24 @@ describe("TooManyDiceRoom.create()", () => {
     expect(body.playerLimit).toBe(4);
     expect(body.diceConfig).toEqual([{ id: "d1", type: "d6" }]);
   });
+
+  it("sets settingsEnabled in the POST body only when a settingsCallback is given", async () => {
+    const postBody = async (callbacks: TooManyDiceCallbacks) => {
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+        new Response(JSON.stringify({ roomCode: "XYZ", ownerToken: "tok" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+      await TooManyDiceRoom.create("too-many-dice.avlyx.partykit.dev", { callbacks });
+      const [, init] = fetchSpy.mock.calls[0];
+      return JSON.parse((init as any).body as string);
+    };
+
+    expect((await postBody({ settingsCallback: () => {} })).settingsEnabled).toBe(true);
+    vi.restoreAllMocks();
+    expect((await postBody({})).settingsEnabled).toBe(false);
+  });
 });
 
 // ─── players ─────────────────────────────────────────────────────────────────
@@ -279,6 +297,7 @@ describe("sendSubmitForms()", () => {
       {
         formId: "form_1",
         targetPlayer: new TmdPlayer("user_1", "Alice"),
+        title: "House Rules",
         fields: [new CheckboxForm("agree", "I agree")],
         submitButton: { label: "Submit" },
       },
@@ -291,10 +310,63 @@ describe("sendSubmitForms()", () => {
       {
         formId: "form_1",
         targetPlayerId: "user_1",
+        title: "House Rules",
         fields: [{ type: "Checkbox", id: "agree", label: "I agree" }],
         submitButton: { label: "Submit" },
       },
     ]);
+  });
+
+  it("omits title when not supplied", async () => {
+    const room = await makeOwnerRoom();
+    mockSocket.send.mockClear();
+
+    await room.sendSubmitForms([
+      {
+        formId: "form_1",
+        targetPlayer: new TmdPlayer("user_1", "Alice"),
+        fields: [new CheckboxForm("agree", "I agree")],
+        submitButton: { label: "Submit" },
+      },
+    ]);
+
+    const sent = JSON.parse(mockSocket.send.mock.calls[0][0]);
+    expect(sent.forms[0].title).toBeUndefined();
+  });
+});
+
+// --- settingsCallback ---------------------------------------------------------
+
+describe("settingsCallback", () => {
+  it("fires with the matching player when the server relays settingsRequested", async () => {
+    const settingsCallback = vi.fn();
+    await makeOwnerRoom({ settingsCallback });
+
+    triggerRoomUpdate(rawRoom([{ userId: "p1", name: "Alice" }]));
+    mockSocket._triggerMessage({ type: "settingsRequested", playerId: "p1" });
+
+    expect(settingsCallback).toHaveBeenCalledOnce();
+    const player = settingsCallback.mock.calls[0][0];
+    expect(player.playerId).toBe("p1");
+    expect(player.name).toBe("Alice");
+  });
+
+  it("falls back to a bare player when the roster has not arrived yet", async () => {
+    const settingsCallback = vi.fn();
+    await makeOwnerRoom({ settingsCallback });
+
+    mockSocket._triggerMessage({ type: "settingsRequested", playerId: "p9" });
+
+    expect(settingsCallback.mock.calls[0][0].playerId).toBe("p9");
+  });
+
+  it("is not invoked for unrelated messages", async () => {
+    const settingsCallback = vi.fn();
+    await makeOwnerRoom({ settingsCallback });
+
+    mockSocket._triggerMessage({ type: "roomState", data: rawRoom() });
+
+    expect(settingsCallback).not.toHaveBeenCalled();
   });
 });
 

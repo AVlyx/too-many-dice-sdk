@@ -7,7 +7,8 @@ import {
   MultiSelectForm,
   SliderForm,
   DpadForm,
-} from "https://esm.sh/too-many-dice@0.1.7";
+  MessageForm,
+} from "https://esm.sh/too-many-dice@0.1.10";
 
 // ── State ──
 let room = null;
@@ -171,6 +172,11 @@ document.getElementById("btn-create-room").addEventListener("click", async () =>
           log(`Form submitted: ${formId} by ${playerId}`, "event");
           logJSON(answers);
         },
+        // Supplying this is what puts "Settings" in the app's ••• menu.
+        settingsCallback: (player) => {
+          log(`Settings requested by ${player.name || player.playerId}`, "event");
+          log("Respond by sending a form from the builders below.", "info");
+        },
       },
     };
     if (playerLimit) opts.playerLimit = playerLimit;
@@ -296,7 +302,7 @@ document.getElementById("btn-enable-swipe").addEventListener("click", async () =
 });
 
 // ── Field Builder ──
-const FIELD_TYPES = ["Text", "Checkbox", "Picker", "MultiSelect", "Slider", "Dpad"];
+const FIELD_TYPES = ["Text", "Checkbox", "Picker", "MultiSelect", "Slider", "Dpad", "Message"];
 
 function createFieldItem(container) {
   const item = document.createElement("div");
@@ -324,6 +330,14 @@ function createFieldItem(container) {
       <div class="config-row config-placeholder">
         <label>Placeholder</label>
         <input type="text" class="field-placeholder" placeholder="Placeholder text">
+      </div>
+      <div class="config-row config-text" style="display:none">
+        <label>Text</label>
+        <input type="text" class="field-text" placeholder="Message shown to the player">
+      </div>
+      <div class="config-row config-color" style="display:none">
+        <label>Color</label>
+        <input type="text" class="field-color" placeholder="e.g. #e94560">
       </div>
       <div class="config-row config-options" style="display:none">
         <label>Options</label>
@@ -383,6 +397,12 @@ function createFieldItem(container) {
   const typeSelect = item.querySelector(".field-type-select");
   const updateVisibility = () => {
     const t = typeSelect.value;
+    const isMessage = t === "Message";
+    item.querySelector(".config-text").style.display = isMessage ? "flex" : "none";
+    item.querySelector(".config-color").style.display = isMessage ? "flex" : "none";
+    // A Message has text instead of a label and can never be required.
+    item.querySelector(".field-label").closest(".config-row").style.display = isMessage ? "none" : "flex";
+    item.querySelector(".field-required").closest(".config-row").style.display = isMessage ? "none" : "flex";
     item.querySelector(".config-placeholder").style.display = t === "Text" ? "flex" : "none";
     item.querySelector(".config-options").style.display =
       t === "Picker" || t === "MultiSelect" ? "flex" : "none";
@@ -449,6 +469,11 @@ function buildFormField(item) {
       if (right) opts.right = { visibility: right };
       return new DpadForm(id, label, Object.keys(opts).length ? opts : undefined);
     }
+    case "Message": {
+      const text = item.querySelector(".field-text").value.trim() || "Message";
+      const color = item.querySelector(".field-color").value.trim();
+      return new MessageForm(id, text, color ? { color } : undefined);
+    }
   }
 }
 
@@ -478,12 +503,14 @@ document.getElementById("btn-sf-send").addEventListener("click", async () => {
   }
 
   const fields = Array.from(fieldItems).map(buildFormField);
+  const title = document.getElementById("sf-title").value.trim();
   const group = {
     formId,
     targetPlayer: player,
     fields,
     submitButton: { label: submitLabel },
   };
+  if (title) group.title = title;
 
   try {
     await room.sendSubmitForms([group]);
@@ -550,6 +577,8 @@ document.getElementById("btn-cf-send").addEventListener("click", async () => {
   const fieldItems = document.getElementById("cf-field-list").querySelectorAll(".field-item");
   const fields = Array.from(fieldItems).map((item) => {
     const field = buildFormField(item);
+    // Display-only fields never emit changes, so they need no handler.
+    if (field.type === "Message") return { field };
     const fieldId = item.querySelector(".field-id").value.trim() || "field";
     return {
       field,
@@ -571,7 +600,9 @@ document.getElementById("btn-cf-send").addEventListener("click", async () => {
   });
 
   try {
+    const cfTitle = document.getElementById("cf-title").value.trim();
     const opts = { targetPlayer: player, fields };
+    if (cfTitle) opts.title = cfTitle;
     if (buttons.length > 0) opts.buttons = buttons;
     callbackHandle = await room.sendCallbackForm(opts);
     log(`Callback form sent to ${player.name} (formId: ${callbackHandle.formId})`, "success");

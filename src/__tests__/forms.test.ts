@@ -4,6 +4,7 @@ import { TextForm } from "../forms/TextForm";
 import { PickerForm } from "../forms/PickerForm";
 import { MultiSelectForm } from "../forms/MultiSelectForm";
 import { SliderForm } from "../forms/SliderForm";
+import { MessageForm } from "../forms/MessageForm";
 
 describe("CheckboxForm", () => {
   it("serializes to field", () => {
@@ -69,5 +70,21 @@ describe("SliderForm", () => {
   it("includes required when set", () => {
     const f = new SliderForm("volume", "Volume", 0, 10, 1, { required: true });
     expect(f.toField().required).toBe(true);
+  });
+});
+
+describe("MessageForm", () => {
+  it("serializes text without a color", () => {
+    const f = new MessageForm("hint", "Pick wisely.");
+    expect(f.toField()).toEqual({
+      type: "Message",
+      id: "hint",
+      text: "Pick wisely.",
+    });
+  });
+
+  it("includes color when set", () => {
+    const f = new MessageForm("warn", "Low HP!", { color: "#e94560" });
+    expect(f.toField().color).toBe("#e94560");
   });
 });

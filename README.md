@@ -83,6 +83,10 @@ const room = await TooManyDiceRoom.create("myapp.partykit.dev", {
 
 **Returns:** `Promise<TooManyDiceRoom>`
 
+> Whether the app shows a **Settings** entry in the room's `•••` menu is decided
+> here, at creation time: the entry exists only if `callbacks.settingsCallback`
+> was supplied. Adding the callback to an already-created room has no effect.
+
 #### Properties
 
 | Property      | Type                   | Description                               |
@@ -217,16 +221,32 @@ const room = await TooManyDiceRoom.create(host, {
     onFormSubmit({ formId, playerId, answers }) {
       console.log(`Player ${playerId} submitted form ${formId}:`, answers);
     },
+    settingsCallback(player) {
+      // The player tapped "Settings" — answer with whatever UI you like.
+      room.sendSubmitForms([
+        {
+          formId: `settings-${player.playerId}`,
+          targetPlayer: player,
+          title: "Game Settings",
+          fields: [
+            new MessageForm("note", "Changes apply next round."),
+            new CheckboxForm("sound", "Sound effects"),
+          ],
+          submitButton: { label: "Save" },
+        },
+      ]);
+    },
   },
 });
 ```
 
-| Callback         | Signature                                       | Description                         |
-| ---------------- | ----------------------------------------------- | ----------------------------------- |
-| `onPlayerJoined` | `(player: TmdPlayer) => void`                   | Fired when a player connects        |
-| `onPlayerLeft`   | `(player: TmdPlayer) => void`                   | Fired when a player disconnects     |
-| `onResult`       | `(results: DiceResult[]) => void`               | Fired when dice settle after a roll |
-| `onFormSubmit`   | `(data: { formId, playerId, answers }) => void` | Fired when a player submits a form  |
+| Callback           | Signature                                       | Description                                        |
+| ------------------ | ----------------------------------------------- | -------------------------------------------------- |
+| `onPlayerJoined`   | `(player: TmdPlayer) => void`                   | Fired when a player connects                       |
+| `onPlayerLeft`     | `(player: TmdPlayer) => void`                   | Fired when a player disconnects                    |
+| `onResult`         | `(results: DiceResult[]) => void`               | Fired when dice settle after a roll                |
+| `onFormSubmit`     | `(data: { formId, playerId, answers }) => void` | Fired when a player submits a form                 |
+| `settingsCallback` | `(player: TmdPlayer) => void`                   | Fired when a player taps **Settings** in the app's `•••` menu. Supplying it is what makes the entry appear — omit it and players see no Settings option. Respond by sending a form. |
 
 ---
 
@@ -265,6 +285,7 @@ await room.sendSubmitForms([
   {
     formId: "character-setup",
     targetPlayer: room.players[0],
+    title: "Create your character",
     fields: [
       new TextForm("name", "Character name", {
         placeholder: "Enter name",
@@ -301,6 +322,7 @@ await room.setFormErrors("character-setup", room.players[0], [
 | -------------- | ------------------- | ------------------------------------- |
 | `formId`       | `string`            | Unique identifier for this form       |
 | `targetPlayer` | `TmdPlayer`         | The player who sees this form         |
+| `title`        | `string`            | Optional heading shown above the fields |
 | `fields`       | `TmdForm[]`         | Array of form field instances         |
 | `submitButton` | `{ label: string }` | The submit button shown to the player |
 
@@ -318,7 +340,10 @@ let selectedPerks: unknown = [];
 
 const handle = await room.sendCallbackForm({
   targetPlayer: room.players[0],
+  title: "Build your fighter",
   fields: [
+    // Display-only fields need no onChange:
+    { field: new MessageForm("hint", "Perks are permanent.", { color: "#e94560" }) },
     {
       field: new SliderForm("str", "Strength", 1, 20, 1),
       onChange: (value) => {
@@ -358,7 +383,8 @@ await handle.clear();
 | Field          | Type               | Description                     |
 | -------------- | ------------------ | ------------------------------- |
 | `targetPlayer` | `TmdPlayer`        | The player who sees this form   |
-| `fields`       | `CallbackField[]`  | Fields with `onChange` handlers |
+| `title`        | `string`           | Optional heading shown above the fields |
+| `fields`       | `CallbackField[]`  | Fields with `onChange` handlers. `onChange` is optional — omit it for display-only fields such as `MessageForm` |
 | `buttons`      | `CallbackButton[]` | Optional action buttons         |
 
 **`CallbackFormHandle`:**
@@ -474,6 +500,28 @@ Submit value: `string` (the selected direction)
 
 ---
 
+#### `MessageForm`
+
+Static text shown inside a form — instructions, warnings, results. Unlike every
+other field it takes `text` rather than a `label`, has no input, and cannot be
+required.
+
+```ts
+// (id, text, options?)
+new MessageForm("intro", "Choose carefully — this cannot be undone.");
+new MessageForm("warning", "You are low on HP!", { color: "#e94560" });
+```
+
+**`MessageFormOptions`:**
+
+| Field   | Type     | Description                                              |
+| ------- | -------- | -------------------------------------------------------- |
+| `color` | `string` | Text colour, any CSS colour string (default: white)      |
+
+Submit value: **none**. The field's `id` never appears in `answers`.
+
+---
+
 ## Complete Example: Turn-Based Game
 
 ```ts
@@ -575,5 +623,7 @@ import type {
   DpadDirectionConfig,
   DpadFieldDef,
   DpadFormOptions,
+  MessageFieldDef,
+  MessageFormOptions,
 } from "too-many-dice";
 ```

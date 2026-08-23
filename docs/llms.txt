@@ -43,7 +43,10 @@ const room = await TooManyDiceRoom.create({
   playerLimit: 4,
   diceConfig: [{ id: "atk", type: "d20" }],
   swipeGesturesEnabled: false,
-  callbacks: { onPlayerJoined, onPlayerLeft, onResult, onFormSubmit },
+  callbacks: {
+    onPlayerJoined, onPlayerLeft, onResult, onFormSubmit,
+    settingsCallback, // supplying this is what adds the app's Settings menu entry
+  },
 });
 ```
 
@@ -118,6 +121,7 @@ await room.sendSubmitForms([
   {
     formId: "character-setup",
     targetPlayer: room.players[0],
+    title: "Create your character",
     fields: [
       new TextForm("name", "Character name", { placeholder: "Enter name", required: true }),
       new PickerForm("class", "Class", ["Warrior", "Mage", "Rogue"]),
@@ -147,7 +151,10 @@ import { SliderForm, DpadForm } from "too-many-dice";
 
 const handle = await room.sendCallbackForm({
   targetPlayer: room.players[0],
+  title: "Build your fighter",
   fields: [
+    // onChange is optional — omit it for display-only fields
+    { field: new MessageForm("hint", "Perks are permanent.", { color: "#e94560" }) },
     {
       field: new SliderForm("str", "Strength", 1, 20, 1),
       onChange: (value) => console.log("Strength:", value),
@@ -162,6 +169,36 @@ await handle.clear(); // dismiss manually
 ```
 
 #### `room.sendCallbackForm(options: CallbackFormOptions): Promise<CallbackFormHandle>`
+
+---
+
+### Settings Button
+
+Supply `settingsCallback` at room creation and the app shows a **Settings** entry
+in the room's `•••` overflow menu. Tapping it invokes your callback; respond by
+sending a form. Omit the callback and the entry never appears — this is decided
+at creation time and cannot be changed later.
+
+```ts
+const room = await TooManyDiceRoom.create(host, {
+  callbacks: {
+    settingsCallback: (player) => {
+      room.sendSubmitForms([
+        {
+          formId: `settings-${player.playerId}`,
+          targetPlayer: player,
+          title: "Game Settings",
+          fields: [
+            new MessageForm("note", "Changes apply next round."),
+            new CheckboxForm("sound", "Sound effects"),
+          ],
+          submitButton: { label: "Save" },
+        },
+      ]);
+    },
+  },
+});
+```
 
 ---
 
@@ -193,18 +230,21 @@ type TooManyDiceCallbacks = {
   onPlayerLeft?: (player: TmdPlayer) => void;
   onResult?: (results: DiceResult[]) => void;
   onFormSubmit?: (data: { formId: string; playerId: string; answers: Record<string, unknown> }) => void;
+  settingsCallback?: (player: TmdPlayer) => void; // presence adds the Settings menu entry
 };
 
 interface SubmitFormGroup {
   formId: string;
   targetPlayer: TmdPlayer;
+  title?: string; // optional heading above the fields
   fields: TmdForm[];
   submitButton: { label: string };
 }
 
 interface CallbackFormOptions {
   targetPlayer: TmdPlayer;
-  fields: CallbackField[];   // { field: TmdForm; onChange: (value: unknown) => void }
+  title?: string;            // optional heading above the fields
+  fields: CallbackField[];   // { field: TmdForm; onChange?: (value: unknown) => void }
   buttons?: CallbackButton[]; // { label: string; onClick: (playerId: string) => void }
 }
 
@@ -240,8 +280,12 @@ Common options: `{ required?: boolean }`
 | `MultiSelectForm` | `(id, label, options: string[], { required? })`  | `string[]`    |
 | `SliderForm`      | `(id, label, min, max, step, { required? })`     | `number`      |
 | `DpadForm`        | `(id, label, { up?, down?, left?, right?, required? })` | `string` (direction) |
+| `MessageForm`     | `(id, text, { color? })`                         | none (display only) |
 
 `DpadForm` direction config: `{ visibility?: "enabled" | "disabled" | "hidden" }`
+
+`MessageForm` is display-only: it takes `text` instead of a `label`, renders as
+static (optionally coloured) text, and its `id` never appears in `answers`.
 
 ---
 

@@ -6,6 +6,8 @@ import type { TmdForm } from "./forms";
 export interface SubmitFormGroup {
   formId: string;
   targetPlayer: TmdPlayer;
+  /** Optional heading shown above the fields. */
+  title?: string;
   fields: TmdForm[];
   submitButton: { label: string };
 }
@@ -15,7 +17,8 @@ export type FormGroup = SubmitFormGroup;
 
 export interface CallbackField {
   field: TmdForm;
-  onChange: (value: unknown) => void;
+  /** Omit for display-only fields such as MessageForm. */
+  onChange?: (value: unknown) => void;
 }
 
 export interface CallbackButton {
@@ -25,6 +28,8 @@ export interface CallbackButton {
 
 export interface CallbackFormOptions {
   targetPlayer: TmdPlayer;
+  /** Optional heading shown above the fields. */
+  title?: string;
   fields: CallbackField[];
   buttons?: CallbackButton[];
 }
@@ -63,6 +68,7 @@ export class TooManyDiceRoom {
   private resultHandler: ((event: MessageEvent) => void) | null = null;
   private formAnswerHandler: ((event: MessageEvent) => void) | null = null;
   private callbackFormHandler: ((event: MessageEvent) => void) | null = null;
+  private settingsHandler: ((event: MessageEvent) => void) | null = null;
   private seenAnswers = new Set<string>();
   private subscribedFormIds = new Set<string>();
   private callbackFieldHandlers = new Map<string, (value: unknown) => void>();
@@ -101,6 +107,7 @@ export class TooManyDiceRoom {
         playerLimit: options?.playerLimit,
         diceConfig: options?.diceConfig,
         swipeGesturesEnabled: options?.swipeGesturesEnabled,
+        settingsEnabled: !!options?.callbacks?.settingsCallback,
       }),
     });
 
@@ -190,8 +197,18 @@ export class TooManyDiceRoom {
       }
     };
 
+    this.settingsHandler = (event: MessageEvent) => {
+      const msg = parseMessage(event);
+      if (!msg || msg.type !== "settingsRequested") return;
+      const player =
+        this.players.find((p) => p.playerId === msg.playerId) ??
+        new TmdPlayer(msg.playerId, "");
+      this.callbacks.settingsCallback?.(player);
+    };
+
     this.socket.addEventListener("message", this.roomHandler);
     this.socket.addEventListener("message", this.resultHandler);
+    this.socket.addEventListener("message", this.settingsHandler);
   }
 
   private stop(): void {
@@ -202,6 +219,10 @@ export class TooManyDiceRoom {
     if (this.resultHandler) {
       this.socket.removeEventListener("message", this.resultHandler);
       this.resultHandler = null;
+    }
+    if (this.settingsHandler) {
+      this.socket.removeEventListener("message", this.settingsHandler);
+      this.settingsHandler = null;
     }
     if (this.formAnswerHandler) {
       this.socket.removeEventListener("message", this.formAnswerHandler);
@@ -384,6 +405,7 @@ export class TooManyDiceRoom {
     const serialized = groups.map((g) => ({
       formId: g.formId,
       targetPlayerId: g.targetPlayer.playerId,
+      title: g.title,
       fields: g.fields.map((f) => f.toField()),
       submitButton: g.submitButton,
     }));
@@ -448,6 +470,7 @@ export class TooManyDiceRoom {
 
     // Register field callbacks
     for (const cf of options.fields) {
+      if (!cf.onChange) continue;
       this.callbackFieldHandlers.set(`${formId}:${cf.field.toField().id}`, cf.onChange);
     }
 
@@ -464,6 +487,7 @@ export class TooManyDiceRoom {
     const serialized = {
       formId,
       targetPlayerId: options.targetPlayer.playerId,
+      title: options.title,
       fields: options.fields.map((cf) => cf.field.toField()),
       formType: "callback" as const,
       buttons,
